@@ -19,7 +19,7 @@ main = do
             it "singlewater" do
               input <- loadDissolveFile "examples/singlewater.txt"
               isRight input `shouldEqual` true
-            it "singlewater" do
-              input <- loadDissolveFile "examples/singlewater.txt"
+            it "accumulate" do
+              input <- loadDissolveFile "examples/accumulate.txt"
               isRight input `shouldEqual` true
             pending "singlewater.txt"
