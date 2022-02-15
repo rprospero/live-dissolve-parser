@@ -6,11 +6,13 @@ import Species (SpeciesPart)
 import PairPotential (PairPart)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Layer (LayerPart)
 
 data Section
   = Species String (Array SpeciesPart)
   | Configuration String (Array ConfigurationPart)
   | PairPotentials (Array PairPart)
+  | Layer String (Array LayerPart)
 
 derive instance genericSection :: Generic Section _
 

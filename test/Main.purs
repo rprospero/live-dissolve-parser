@@ -16,7 +16,10 @@ main = do
     $ runSpec [ consoleReporter ] do
         describe "Live Parser Spec" do
           describe "Example files" do
-            it "input" do
-              input <- loadDissolveFile "examples/input.txt"
+            it "singlewater" do
+              input <- loadDissolveFile "examples/singlewater.txt"
+              isRight input `shouldEqual` true
+            it "singlewater" do
+              input <- loadDissolveFile "examples/singlewater.txt"
               isRight input `shouldEqual` true
             pending "singlewater.txt"

@@ -10,6 +10,6 @@ main :: Effect Unit
 main = do
   _ <-
     runAff (const $ pure unit) do
-      input ← loadDissolveFile "examples/input.txt"
+      input ← loadDissolveFile "examples/singlewater.txt"
       log $ show input
   pure unit
