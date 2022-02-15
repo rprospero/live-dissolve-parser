@@ -22,7 +22,7 @@ dissolveLanguage =
     , nestedComments: false
     , opLetter: (fail "No Operators")
     , opStart: (fail "NoOperators")
-    , reservedNames: [ "Atom", "Bond", "Species" ]
+    , reservedNames: []
     , reservedOpNames: []
     }
 

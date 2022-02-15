@@ -6,38 +6,59 @@ import Data.List.NonEmpty (toUnfoldable)
 import Text.Parsing.Parser (Parser)
 import Text.Parsing.Parser.Combinators (many1Till)
 import Text.Parsing.Parser.String (string)
-import Types
 import Util (dissolveTokens, signedFloat)
+import Data.Generic.Rep (class Generic)
+import Data.Show.Generic (genericShow)
 
-density = dissolveTokens.reserved "Density" *> (GAPDensity <$> signedFloat <*> dissolveTokens.symbol "atoms/A3")
+data ConfigurationPart
+  = Generator (Array GeneratorPart)
+  | Temperature Number
 
-population = dissolveTokens.reserved "Population" *> (GAPPopulation <$> dissolveTokens.integer)
+derive instance genericConfigurationPart :: Generic ConfigurationPart _
 
-species = dissolveTokens.reserved "Species" *> (GAPSpecies <$> dissolveTokens.stringLiteral)
+instance showConfigurationPart :: Show ConfigurationPart where
+  show x = genericShow x
+
+data GeneratorPart
+  = Add (Array GeneratorAddPart)
+
+derive instance genericGeneratorPart :: Generic GeneratorPart _
+
+instance showGeneratorPart :: Show GeneratorPart where
+  show x = genericShow x
+
+data GeneratorAddPart
+  = Density Number String
+  | Population Int
+  | Species String
+
+derive instance genericGeneratorAddPart :: Generic GeneratorAddPart _
+
+instance showGeneratorAddPart :: Show GeneratorAddPart where
+  show x = genericShow x
+
+density = dissolveTokens.symbol "Density" *> (Density <$> signedFloat <*> dissolveTokens.symbol "atoms/A3")
+
+population = dissolveTokens.symbol "Population" *> (Population <$> dissolveTokens.integer)
+
+species = dissolveTokens.symbol "Species" *> (Species <$> dissolveTokens.stringLiteral)
 
 generatorAddPart = density <|> population <|> species
 
 add = do
-  _ <- dissolveTokens.reserved "Add"
+  _ <- dissolveTokens.symbol "Add"
   contents <- many1Till generatorAddPart $ string "End"
-  _ <- dissolveTokens.reserved "Add"
-  pure (GPAdd $ toUnfoldable contents)
+  _ <- dissolveTokens.symbol "Add"
+  pure (Add $ toUnfoldable contents)
 
 generatorPart = add
 
 generator = do
-  _ <- dissolveTokens.reserved "Generator"
+  _ <- dissolveTokens.symbol "Generator"
   contents <- many1Till generatorPart $ string "End"
-  _ <- dissolveTokens.reserved "Generator"
+  _ <- dissolveTokens.symbol "Generator"
   pure (Generator $ toUnfoldable contents)
 
-temperature = dissolveTokens.reserved "Temperature" *> (Temperature <$> dissolveTokens.float)
+temperature = dissolveTokens.symbol "Temperature" *> (Temperature <$> dissolveTokens.float)
 
 configurationPart = temperature <|> generator
-
-configuration = do
-  _ <- dissolveTokens.reserved "Configuration"
-  name <- dissolveTokens.stringLiteral
-  contents <- many1Till configurationPart $ string "End"
-  _ <- dissolveTokens.reserved "Configuration"
-  pure (Configuration name $ toUnfoldable contents)
