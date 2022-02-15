@@ -1,3 +1,6 @@
+# Test Case 08 - Single water in wrong geometry
+
+# Define Water Molecule
 Species 'Water'
   # Atoms - Coordinates give bond length of 0.9 and angle of 100.0
   Atom   1  O    0.156743    -0.152502     0.317676    'OW'   -0.82

@@ -19,7 +19,7 @@ section :: Parser String Section
 section = species <|> configuration
 
 dissolve :: Parser String (Array Section)
-dissolve = skipSpaces *> (toUnfoldable <$> sepBy1 section skipSpaces)
+dissolve = dissolveTokens.whiteSpace *> (toUnfoldable <$> sepBy1 section skipSpaces)
 
 loadDissolveFile :: String -> Aff (Either ParseError (Array Section))
 loadDissolveFile file = do
