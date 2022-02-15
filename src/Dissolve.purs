@@ -3,6 +3,7 @@ module Dissolve where
 import Prelude
 import Layer (layerPart)
 import Configuration (configurationPart)
+import Master (masterPart)
 import PairPotential (pairPart)
 import Control.Alternative ((<|>))
 import Data.Either (Either)
@@ -18,7 +19,7 @@ import Types (Section(..))
 import Util (dissolveTokens)
 
 section :: Parser String Section
-section = species <|> configuration <|> pairPotentials <|> layer
+section = species <|> configuration <|> pairPotentials <|> layer <|> master
 
 dissolve :: Parser String (Array Section)
 dissolve = dissolveTokens.whiteSpace *> (toUnfoldable <$> sepBy1 section skipSpaces)
@@ -58,3 +59,10 @@ layer = do
   contents <- many1Till layerPart $ string "End"
   _ <- dissolveTokens.reserved "Layer"
   pure (Layer name $ toUnfoldable contents)
+
+master :: Parser String Section
+master = do
+  _ <- dissolveTokens.reserved "Master"
+  contents <- many1Till masterPart $ string "End"
+  _ <- dissolveTokens.reserved "Master"
+  pure (Master $ toUnfoldable contents)
