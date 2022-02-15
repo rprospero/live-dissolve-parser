@@ -59,3 +59,10 @@ signedFloat = negativeFloat <|> dissolveTokens.float
     _ ← char '-'
     x ← dissolveTokens.float
     pure $ -1.0 * x
+
+bool :: Parser String Boolean
+bool = t <|> f <?> "Boolean"
+  where
+  t = dissolveTokens.symbol "True" *> pure true
+
+  f = dissolveTokens.symbol "False" *> pure false

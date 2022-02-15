@@ -2,6 +2,7 @@ module Dissolve where
 
 import Prelude
 import Configuration (configurationPart)
+import PairPotential (pairPart)
 import Control.Alternative ((<|>))
 import Data.Either (Either)
 import Data.List.NonEmpty (toUnfoldable)
@@ -16,7 +17,7 @@ import Types (Section(..))
 import Util (dissolveTokens)
 
 section :: Parser String Section
-section = species <|> configuration
+section = species <|> configuration <|> pairPotentials
 
 dissolve :: Parser String (Array Section)
 dissolve = dissolveTokens.whiteSpace *> (toUnfoldable <$> sepBy1 section skipSpaces)
@@ -41,3 +42,10 @@ species = do
   contents <- many1Till speciesPart $ string "End"
   _ <- dissolveTokens.reserved "Species"
   pure (Species name $ toUnfoldable contents)
+
+pairPotentials :: Parser String Section
+pairPotentials = do
+  _ <- dissolveTokens.reserved "PairPotentials"
+  contents <- many1Till pairPart $ string "End"
+  _ <- dissolveTokens.reserved "PairPotentials"
+  pure (PairPotentials $ toUnfoldable contents)
