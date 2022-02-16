@@ -90,16 +90,16 @@ siteA = do
   _ <- dissolveTokens.symbol "SiteA"
   x <- dissolveTokens.identifier
   y <- dissolveTokens.stringLiteral
-  second <- optionMaybe (Tuple <$> dissolveTokens.reserved x <*> dissolveTokens.stringLiteral)
-  pure $ SiteA x y Nothing
+  second <- optionMaybe (Tuple <$> dissolveTokens.symbol x <*> dissolveTokens.stringLiteral)
+  pure $ SiteA x y second
 
 siteB :: MyParser ModulePart
 siteB = do
   _ <- dissolveTokens.symbol "SiteB"
   x <- dissolveTokens.identifier
   y <- dissolveTokens.stringLiteral
-  second <- optionMaybe (Tuple <$> dissolveTokens.reserved x <*> dissolveTokens.stringLiteral)
-  pure $ SiteB x y Nothing
+  second <- optionMaybe (Tuple <$> dissolveTokens.symbol x <*> dissolveTokens.stringLiteral)
+  pure $ SiteB x y second
 
 distanceRange :: MyParser ModulePart
 distanceRange = dissolveTokens.symbol "DistanceRange" *> (DistanceRange <$> dissolveTokens.float <*> dissolveTokens.float <*> dissolveTokens.float)
