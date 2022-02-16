@@ -25,4 +25,7 @@ main = do
             it "intensities" do
               input <- loadDissolveFile "examples/intensities.txt"
               isRight input `shouldEqual` true
+            it "mgo" do
+              input <- loadDissolveFile "examples/mgo.txt"
+              isRight input `shouldEqual` true
             pending "singlewater.txt"
