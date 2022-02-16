@@ -2,13 +2,15 @@ module Layer where
 
 import Prelude
 import Control.Alternative ((<|>))
+import Data.Array (many)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
+import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
-import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, (<?>))
-import Text.Parsing.Parser.String (string)
+import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
+import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
 import Util (dissolveTokens, MyParser, signedFloat, sksContainer)
 
 data LayerPart
@@ -174,8 +176,14 @@ modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distan
 layerPart :: MyParser LayerPart
 layerPart = do
   _ <- dissolveTokens.reserved "Module"
-  kind <- dissolveTokens.identifier
-  name <- optionMaybe $ dissolveTokens.stringLiteral
+  _ <- many (char ' ')
+  kind <- SCU.fromCharArray <$> many (satisfy (\c -> (c /= ' ') && (c /= '\n')))
+  name <-
+    optionMaybe do
+      skipMany (satisfy (\c -> c == ' '))
+      between (optional $ char '\'') (optional $ char '\'') $ SCU.fromCharArray <$> many (satisfy (\c -> (c /= ' ') && (c /= '\n')))
+  _ <- char '\n'
+  dissolveTokens.whiteSpace
   contents <- many1Till modulePart $ string "End"
   _ <- dissolveTokens.reserved "Module"
   pure (Module kind name $ toUnfoldable contents)
