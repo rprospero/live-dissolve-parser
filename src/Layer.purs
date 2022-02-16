@@ -2,16 +2,19 @@ module Layer where
 
 import Prelude
 import Control.Alternative ((<|>))
+import Data.Array (many)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
+import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
+import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (sepBy1, many1Till)
+import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, sepBy1, try)
 import Text.Parsing.Parser.String (skipSpaces, string)
 import Util (dissolveTokens, signedFloat)
 
 data LayerPart
-  = Module String (Array ModulePart)
+  = Module String (Maybe String) (Array ModulePart)
 
 derive instance genericLayerPart :: Generic LayerPart _
 
@@ -29,11 +32,12 @@ data ModulePart
   | Averaging Int
   | Target String
   | Data String
-  | SiteA String String
-  | SiteB String String
+  | SiteA String String (Maybe (Tuple String String))
+  | SiteB String String (Maybe (Tuple String String))
   | DistanceRange Number Number Number
   | ExcludeSameMolecule Boolean
   | InternalData1D String String
+  | Range Number
 
 derive instance genericModulePart :: Generic ModulePart _
 
@@ -41,7 +45,7 @@ instance showModulePart :: Show ModulePart where
   show x = genericShow x
 
 configuration :: Parser String ModulePart
-configuration = dissolveTokens.symbol "Configuration" *> (Configuration <$> dissolveTokens.stringLiteral)
+configuration = (dissolveTokens.symbol "Configurations" <|> dissolveTokens.symbol "Configuration") *> (Configuration <$> dissolveTokens.stringLiteral)
 
 frequency :: Parser String ModulePart
 frequency = dissolveTokens.symbol "Frequency" *> (Frequency <$> dissolveTokens.integer)
@@ -77,10 +81,20 @@ data_ :: Parser String ModulePart
 data_ = dissolveTokens.symbol "Data" *> (Data <$> dissolveTokens.stringLiteral)
 
 siteA :: Parser String ModulePart
-siteA = dissolveTokens.symbol "SiteA" *> (SiteA <$> dissolveTokens.identifier <*> dissolveTokens.stringLiteral)
+siteA = do
+  _ <- dissolveTokens.symbol "SiteA"
+  x <- dissolveTokens.identifier
+  y <- dissolveTokens.stringLiteral
+  second <- optionMaybe (Tuple <$> dissolveTokens.reserved x <*> dissolveTokens.stringLiteral)
+  pure $ SiteA x y Nothing
 
 siteB :: Parser String ModulePart
-siteB = dissolveTokens.symbol "SiteB" *> (SiteB <$> dissolveTokens.identifier <*> dissolveTokens.stringLiteral)
+siteB = do
+  _ <- dissolveTokens.symbol "SiteB"
+  x <- dissolveTokens.identifier
+  y <- dissolveTokens.stringLiteral
+  second <- optionMaybe (Tuple <$> dissolveTokens.reserved x <*> dissolveTokens.stringLiteral)
+  pure $ SiteB x y Nothing
 
 distanceRange :: Parser String ModulePart
 distanceRange = dissolveTokens.symbol "DistanceRange" *> (DistanceRange <$> dissolveTokens.float <*> dissolveTokens.float <*> dissolveTokens.float)
@@ -90,12 +104,16 @@ excludeSameMolecule = dissolveTokens.symbol "ExcludeSameMolecule" *> (ExcludeSam
 
 internalData1D = dissolveTokens.symbol "InternalData1D" *> (InternalData1D <$> dissolveTokens.stringLiteral <*> dissolveTokens.stringLiteral)
 
-modulePart = configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> distanceRange <|> excludeSameMolecule <|> internalData1D
+range :: Parser String ModulePart
+range = dissolveTokens.symbol "Range" *> (Range <$> dissolveTokens.float)
+
+modulePart = distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range
 
 layerPart :: Parser String LayerPart
 layerPart = do
   _ <- dissolveTokens.reserved "Module"
-  name <- dissolveTokens.identifier
+  kind <- dissolveTokens.identifier
+  name <- optionMaybe $ dissolveTokens.stringLiteral
   contents <- many1Till modulePart $ string "End"
   _ <- dissolveTokens.reserved "Module"
-  pure (Module name $ toUnfoldable contents)
+  pure (Module kind name $ toUnfoldable contents)
