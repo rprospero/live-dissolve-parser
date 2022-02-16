@@ -9,7 +9,7 @@ import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser (Parser)
 import Text.Parsing.Parser.Combinators (optionMaybe)
 import Text.Parsing.Parser.String (char)
-import Util (bool, dissolveTokens, namedContainer, signedFloat)
+import Util (bool, dissolveTokens, namedContainer, signedFloat, MyParser)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
@@ -52,30 +52,30 @@ derive instance genericSitePart :: Generic SitePart _
 instance showSitePart :: Show SitePart where
   show x = genericShow x
 
-atom :: Parser String SpeciesPart
+atom :: MyParser SpeciesPart
 atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat <*> signedFloat <*> dissolveTokens.stringLiteral <*> optionMaybe signedFloat)
 
-bond :: Parser String SpeciesPart
+bond :: MyParser SpeciesPart
 bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> bondRef)
 
-bondRef :: Parser String BondInfo
+bondRef :: MyParser BondInfo
 bondRef = master <|> raw
   where
   master = char '@' *> (BondRef <$> dissolveTokens.identifier)
 
   raw = BondInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
-angle :: Parser String SpeciesPart
+angle :: MyParser SpeciesPart
 angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> angleRef)
 
-angleRef :: Parser String AngleInfo
+angleRef :: MyParser AngleInfo
 angleRef = master <|> raw
   where
   master = char '@' *> (AngleRef <$> dissolveTokens.identifier)
 
   raw = AngleInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
-isotopologue :: Parser String SpeciesPart
+isotopologue :: MyParser SpeciesPart
 isotopologue = do
   _ <- dissolveTokens.symbol "Isotopologue"
   name <- dissolveTokens.stringLiteral
@@ -87,7 +87,7 @@ isotopologue = do
   nBeta <- dissolveTokens.integer
   pure $ Isotopologue name alpha nAlpha beta nBeta
 
-site :: Parser String SpeciesPart
+site :: MyParser SpeciesPart
 site = namedContainer "Site" sitePart Site
 
 origin = dissolveTokens.symbol "Origin" *> (Origin <$> many dissolveTokens.integer)
@@ -100,5 +100,5 @@ massWeighted = dissolveTokens.symbol "OriginMassWeighted" *> (OriginMassWeighted
 
 sitePart = xaxis <|> yaxis <|> massWeighted <|> origin
 
-speciesPart :: Parser String SpeciesPart
+speciesPart :: MyParser SpeciesPart
 speciesPart = atom <|> bond <|> angle <|> isotopologue <|> site
