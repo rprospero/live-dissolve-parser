@@ -86,3 +86,13 @@ namedContainer kind content constructor = do
   contents <- many1Till content $ string "End"
   _ <- dissolveTokens.reserved kind
   pure (constructor name $ NE.toUnfoldable contents)
+
+sksContainer :: forall a x. String -> MyParser x -> (String -> String -> String -> Array x -> a) -> MyParser a
+sksContainer kind content constructor = do
+  _ <- dissolveTokens.symbol kind
+  file <- dissolveTokens.stringLiteral <?> "file"
+  word <- dissolveTokens.identifier
+  path <- dissolveTokens.stringLiteral <?> "path"
+  contents <- many1Till content $ string "End"
+  _ <- dissolveTokens.reserved kind
+  pure (constructor file word path $ NE.toUnfoldable contents)

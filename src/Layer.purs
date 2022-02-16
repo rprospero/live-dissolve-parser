@@ -7,9 +7,9 @@ import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
-import Text.Parsing.Parser.Combinators (many1Till, optionMaybe)
+import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, (<?>))
 import Text.Parsing.Parser.String (string)
-import Util (dissolveTokens, MyParser)
+import Util (dissolveTokens, MyParser, signedFloat, sksContainer)
 
 data LayerPart
   = Module String (Maybe String) (Array ModulePart)
@@ -37,16 +37,31 @@ data ModulePart
   | InternalData1D String String
   | Range Number
   | Multiplicity Int Int Int
-  | QBroadening Number
+  | QBroadening String Number
+  | QDelta Number
   | QMax Number
   | QMin Number
   | TestReflections String
   | Method String
   | SourceRDFs String
+  | WindowFunction String
+  | IncludeBragg String
+  | BraggQBroadening String Number Number
+  | SourceSQs String
+  | Data1D String String String (Array Data1DPart)
+  | Threshold Number
 
 derive instance genericModulePart :: Generic ModulePart _
 
 instance showModulePart :: Show ModulePart where
+  show x = genericShow x
+
+data Data1DPart
+  = Y Int
+
+derive instance genericData1Part :: Generic Data1DPart _
+
+instance showData1DPart :: Show Data1DPart where
   show x = genericShow x
 
 configuration :: MyParser ModulePart
@@ -121,8 +136,20 @@ qMin = dissolveTokens.symbol "QMin" *> (QMin <$> dissolveTokens.float)
 qMax :: MyParser ModulePart
 qMax = dissolveTokens.symbol "QMax" *> (QMax <$> dissolveTokens.float)
 
+qDelta :: MyParser ModulePart
+qDelta = dissolveTokens.symbol "QDelta" *> (QDelta <$> dissolveTokens.float)
+
 qBroadening :: MyParser ModulePart
-qBroadening = dissolveTokens.symbol "QBroadening" *> (QBroadening <$> dissolveTokens.float)
+qBroadening = dissolveTokens.symbol "QBroadening" *> (QBroadening <$> dissolveTokens.identifier <*> dissolveTokens.float)
+
+windowFunction :: MyParser ModulePart
+windowFunction = dissolveTokens.symbol "WindowFunction" *> (WindowFunction <$> dissolveTokens.identifier)
+
+includeBragg :: MyParser ModulePart
+includeBragg = dissolveTokens.symbol "IncludeBragg" *> (IncludeBragg <$> dissolveTokens.stringLiteral)
+
+braggQBroadening :: MyParser ModulePart
+braggQBroadening = dissolveTokens.symbol "BraggQBroadening" *> (BraggQBroadening <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat)
 
 testReflections = dissolveTokens.symbol "TestReflections" *> (TestReflections <$> dissolveTokens.stringLiteral)
 
@@ -130,7 +157,19 @@ method = dissolveTokens.symbol "Method" *> (Method <$> dissolveTokens.identifier
 
 sourceRDFs = dissolveTokens.symbol "SourceRDFs" *> (SourceRDFs <$> dissolveTokens.stringLiteral)
 
-modulePart = distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs
+sourceSQs :: MyParser ModulePart
+sourceSQs = dissolveTokens.symbol "SourceSQs" *> (SourceSQs <$> dissolveTokens.stringLiteral)
+
+threshold :: MyParser ModulePart
+threshold = dissolveTokens.symbol "Threshold" *> (Threshold <$> dissolveTokens.float)
+
+y_ = dissolveTokens.symbol "Y" *> (Y <$> dissolveTokens.integer)
+
+data1DPart = y_
+
+data1D = sksContainer "Data1D" data1DPart Data1D <?> "Failed Data1D"
+
+modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sourceSQs <|> threshold
 
 layerPart :: MyParser LayerPart
 layerPart = do
