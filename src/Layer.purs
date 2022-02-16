@@ -38,6 +38,9 @@ data ModulePart
   | ExcludeSameMolecule Boolean
   | InternalData1D String String
   | Range Number
+  | Multiplicity Int Int Int
+  | QMax Number
+  | TestReflections String
 
 derive instance genericModulePart :: Generic ModulePart _
 
@@ -107,7 +110,15 @@ internalData1D = dissolveTokens.symbol "InternalData1D" *> (InternalData1D <$> d
 range :: Parser String ModulePart
 range = dissolveTokens.symbol "Range" *> (Range <$> dissolveTokens.float)
 
-modulePart = distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range
+multiplicity :: Parser String ModulePart
+multiplicity = dissolveTokens.symbol "Multiplicity" *> (Multiplicity <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer)
+
+qMax :: Parser String ModulePart
+qMax = dissolveTokens.symbol "QMax" *> (QMax <$> dissolveTokens.float)
+
+testReflections = dissolveTokens.symbol "TestReflections" *> (TestReflections <$> dissolveTokens.stringLiteral)
+
+modulePart = distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qMax <|> testReflections
 
 layerPart :: Parser String LayerPart
 layerPart = do
