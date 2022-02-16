@@ -4,18 +4,22 @@ import Prelude
 import Control.Alternative ((<|>))
 import Data.Array (many)
 import Data.Generic.Rep (class Generic)
-import Data.Maybe (Maybe)
+import Data.List.NonEmpty as NE
+import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
+import Data.String.CodeUnits (fromCharArray)
+import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (optionMaybe)
-import Text.Parsing.Parser.String (char)
-import Util (bool, dissolveTokens, namedContainer, signedFloat, MyParser)
+import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, try)
+import Text.Parsing.Parser.String (char, satisfy, string)
+import Text.Parsing.Parser.Token (letter)
+import Util (arbitrary, bool, notSpace, dissolveTokens, namedContainer, signedFloat, MyParser)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
   | Angle Int Int Int AngleInfo
   | Bond Int Int BondInfo
-  | Isotopologue String String Int String Int
+  | Isotopologue String (Array String)
   | Site String (Array SitePart)
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
@@ -79,13 +83,9 @@ isotopologue :: MyParser SpeciesPart
 isotopologue = do
   _ <- dissolveTokens.symbol "Isotopologue"
   name <- dissolveTokens.stringLiteral
-  alpha <- dissolveTokens.identifier
-  _ <- char '='
-  nAlpha <- dissolveTokens.integer
-  beta <- dissolveTokens.identifier
-  _ <- char '='
-  nBeta <- dissolveTokens.integer
-  pure $ Isotopologue name alpha nAlpha beta nBeta
+  contents <- many1Till arbitrary $ char '\n'
+  dissolveTokens.whiteSpace
+  pure $ Isotopologue name $ NE.toUnfoldable contents
 
 site :: MyParser SpeciesPart
 site = namedContainer "Site" sitePart Site

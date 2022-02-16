@@ -2,10 +2,11 @@ module Util where
 
 import Prelude
 import Control.Alternative ((<|>))
-import Data.Array (toUnfoldable)
+import Data.Array (toUnfoldable, some, many)
 import Data.List as List
 import Data.List.NonEmpty as NE
 import Data.Maybe (Maybe(..))
+import Data.String.CodeUnits (fromCharArray)
 import Data.String.CodeUnits as SCU
 import Text.Parsing.Parser (Parser, fail)
 import Text.Parsing.Parser.Combinators (between, many1Till, (<?>))
@@ -96,3 +97,12 @@ sksContainer kind content constructor = do
   contents <- many1Till content $ string "End"
   _ <- dissolveTokens.reserved kind
   pure (constructor file word path $ NE.toUnfoldable contents)
+
+notSpace :: MyParser Char
+notSpace = satisfy (\c -> (c /= ' ') && (c /= '\n') && (c /= '\t'))
+
+arbitrary :: MyParser String
+arbitrary = do
+  text <- fromCharArray <$> some notSpace
+  _ <- many (char ' ')
+  pure text

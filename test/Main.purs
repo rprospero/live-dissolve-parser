@@ -5,7 +5,7 @@ import Dissolve (loadDissolveFile)
 import Data.Either (isRight)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Test.Spec (pending, describe, it)
+import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
@@ -28,4 +28,6 @@ main = do
             it "mgo" do
               input <- loadDissolveFile "examples/mgo.txt"
               isRight input `shouldEqual` true
-            pending "singlewater.txt"
+            it "argon_dep0.1indep0.2.txt" do
+              input <- loadDissolveFile "examples/argon_dep0.1indep0.2.txt"
+              isRight input `shouldEqual` true
