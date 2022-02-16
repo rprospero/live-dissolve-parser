@@ -4,7 +4,6 @@ import Prelude
 import Control.Alternative ((<|>))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
-import Text.Parsing.Parser (Parser)
 import Util (bool, dissolveTokens, signedFloat)
 
 data PairPart

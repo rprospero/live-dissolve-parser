@@ -2,16 +2,15 @@ module Layer where
 
 import Prelude
 import Control.Alternative ((<|>))
-import Data.Array (many)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, sepBy1, try)
-import Text.Parsing.Parser.String (skipSpaces, string)
-import Util (dissolveTokens, signedFloat)
+import Text.Parsing.Parser.Combinators (many1Till, optionMaybe)
+import Text.Parsing.Parser.String (string)
+import Util (dissolveTokens)
 
 data LayerPart
   = Module String (Maybe String) (Array ModulePart)

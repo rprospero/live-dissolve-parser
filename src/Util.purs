@@ -2,11 +2,13 @@ module Util where
 
 import Prelude
 import Control.Alternative ((<|>))
+import Data.Array (toUnfoldable)
 import Data.List as List
+import Data.List.NonEmpty as NE
 import Data.Maybe (Maybe(..))
 import Data.String.CodeUnits as SCU
 import Text.Parsing.Parser (Parser, fail)
-import Text.Parsing.Parser.Combinators (between, (<?>))
+import Text.Parsing.Parser.Combinators (between, many1Till, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string)
 import Text.Parsing.Parser.Token (GenLanguageDef(..), LanguageDef, TokenParser, alphaNum, letter, makeTokenParser)
 
@@ -66,3 +68,18 @@ bool = t <|> f <?> "Boolean"
   t = dissolveTokens.symbol "True" *> pure true
 
   f = dissolveTokens.symbol "False" *> pure false
+
+container :: forall a x. String -> Parser String x -> (Array x -> a) -> Parser String a
+container name content constructor = do
+  _ <- dissolveTokens.reserved name
+  contents <- many1Till content $ string "End"
+  _ <- dissolveTokens.reserved name
+  pure (constructor $ NE.toUnfoldable contents)
+
+namedContainer :: forall a x. String -> Parser String x -> (String -> Array x -> a) -> Parser String a
+namedContainer kind content constructor = do
+  _ <- dissolveTokens.reserved kind
+  name <- dissolveTokens.stringLiteral
+  contents <- many1Till content $ string "End"
+  _ <- dissolveTokens.reserved kind
+  pure (constructor name $ NE.toUnfoldable contents)

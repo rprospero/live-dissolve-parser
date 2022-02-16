@@ -1,22 +1,22 @@
 module Dissolve where
 
 import Prelude
-import Layer (layerPart)
 import Configuration (configurationPart)
-import Master (masterPart)
-import PairPotential (pairPart)
 import Control.Alternative ((<|>))
 import Data.Either (Either)
 import Data.List.NonEmpty (toUnfoldable)
 import Effect.Aff (Aff)
+import Layer (layerPart)
+import Master (masterPart)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile)
+import PairPotential (pairPart)
 import Species (speciesPart)
 import Text.Parsing.Parser (ParseError, Parser, runParser)
-import Text.Parsing.Parser.Combinators (sepBy1, many1Till)
-import Text.Parsing.Parser.String (skipSpaces, string)
+import Text.Parsing.Parser.Combinators (sepBy1)
+import Text.Parsing.Parser.String (skipSpaces)
 import Types (Section(..))
-import Util (dissolveTokens)
+import Util (container, dissolveTokens, namedContainer)
 
 section :: Parser String Section
 section = species <|> configuration <|> pairPotentials <|> layer <|> master
@@ -30,39 +30,16 @@ loadDissolveFile file = do
   pure $ runParser input dissolve
 
 configuration :: Parser String Section
-configuration = do
-  _ <- dissolveTokens.reserved "Configuration"
-  name <- dissolveTokens.stringLiteral
-  contents <- many1Till configurationPart $ string "End"
-  _ <- dissolveTokens.reserved "Configuration"
-  pure (Configuration name $ toUnfoldable contents)
+configuration = namedContainer "Configuration" configurationPart Configuration
 
 species :: Parser String Section
-species = do
-  _ <- dissolveTokens.reserved "Species"
-  name ← dissolveTokens.stringLiteral
-  contents <- many1Till speciesPart $ string "End"
-  _ <- dissolveTokens.reserved "Species"
-  pure (Species name $ toUnfoldable contents)
+species = namedContainer "Species" speciesPart Species
 
 pairPotentials :: Parser String Section
-pairPotentials = do
-  _ <- dissolveTokens.reserved "PairPotentials"
-  contents <- many1Till pairPart $ string "End"
-  _ <- dissolveTokens.reserved "PairPotentials"
-  pure (PairPotentials $ toUnfoldable contents)
+pairPotentials = container "PairPotentials" pairPart PairPotentials
 
 layer :: Parser String Section
-layer = do
-  _ <- dissolveTokens.reserved "Layer"
-  name ← dissolveTokens.stringLiteral
-  contents <- many1Till layerPart $ string "End"
-  _ <- dissolveTokens.reserved "Layer"
-  pure (Layer name $ toUnfoldable contents)
+layer = namedContainer "Layer" layerPart Layer
 
 master :: Parser String Section
-master = do
-  _ <- dissolveTokens.reserved "Master"
-  contents <- many1Till masterPart $ string "End"
-  _ <- dissolveTokens.reserved "Master"
-  pure (Master $ toUnfoldable contents)
+master = container "Master" masterPart Master

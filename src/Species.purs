@@ -4,13 +4,12 @@ import Prelude
 import Control.Alternative ((<|>))
 import Data.Array (many)
 import Data.Generic.Rep (class Generic)
-import Data.List.NonEmpty as List
 import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (many1Till, optionMaybe)
-import Text.Parsing.Parser.String (char, string)
-import Util (bool, dissolveTokens, signedFloat)
+import Text.Parsing.Parser.Combinators (optionMaybe)
+import Text.Parsing.Parser.String (char)
+import Util (bool, dissolveTokens, namedContainer, signedFloat)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
@@ -89,12 +88,7 @@ isotopologue = do
   pure $ Isotopologue name alpha nAlpha beta nBeta
 
 site :: Parser String SpeciesPart
-site = do
-  _ <- dissolveTokens.reserved "Site"
-  name <- dissolveTokens.stringLiteral
-  contents <- many1Till sitePart $ string "End"
-  _ <- dissolveTokens.reserved "Site"
-  pure (Site name $ List.toUnfoldable contents)
+site = namedContainer "Site" sitePart Site
 
 origin = dissolveTokens.symbol "Origin" *> (Origin <$> many dissolveTokens.integer)
 

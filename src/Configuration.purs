@@ -4,13 +4,10 @@ import Prelude
 import Control.Alternative ((<|>))
 import Data.Array (many)
 import Data.Generic.Rep (class Generic)
-import Data.List.NonEmpty (toUnfoldable)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
-import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (many1Till)
 import Text.Parsing.Parser.String (noneOf, skipSpaces, string)
-import Util (dissolveTokens, signedFloat)
+import Util (container, dissolveTokens, signedFloat)
 
 data ConfigurationPart
   = Generator (Array GeneratorPart)
@@ -60,29 +57,17 @@ boxAction = dissolveTokens.symbol "BoxAction" *> (BoxAction <$> dissolveTokens.i
 
 generatorAddPart = density <|> population <|> species <|> boxAction
 
-add = do
-  _ <- dissolveTokens.symbol "Add"
-  contents <- many1Till generatorAddPart $ string "End"
-  _ <- dissolveTokens.symbol "Add"
-  pure (Add $ toUnfoldable contents)
+add = container "Add" generatorAddPart Add
 
 length = dissolveTokens.symbol "Lengths" *> (Length <$> signedFloat <*> signedFloat <*> signedFloat)
 
 boxPart = length
 
-box = do
-  _ <- dissolveTokens.symbol "Box"
-  contents <- many1Till boxPart $ string "End"
-  _ <- dissolveTokens.symbol "Box"
-  pure (Box $ toUnfoldable contents)
+box = container "Box" boxPart Box
 
 generatorPart = add <|> box
 
-generator = do
-  _ <- dissolveTokens.symbol "Generator"
-  contents <- many1Till generatorPart $ string "End"
-  _ <- dissolveTokens.symbol "Generator"
-  pure (Generator $ toUnfoldable contents)
+generator = container "Generator" generatorPart Generator
 
 temperature = dissolveTokens.symbol "Temperature" *> (Temperature <$> dissolveTokens.float)
 
