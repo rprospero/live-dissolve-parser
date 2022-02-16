@@ -32,6 +32,7 @@ data GeneratorAddPart
   = Density Number String
   | Population Int
   | Species String
+  | BoxAction String
 
 derive instance genericGeneratorAddPart :: Generic GeneratorAddPart _
 
@@ -52,7 +53,9 @@ population = dissolveTokens.symbol "Population" *> (Population <$> dissolveToken
 
 species = dissolveTokens.symbol "Species" *> (Species <$> dissolveTokens.stringLiteral)
 
-generatorAddPart = density <|> population <|> species
+boxAction = dissolveTokens.symbol "BoxAction" *> (BoxAction <$> dissolveTokens.identifier)
+
+generatorAddPart = density <|> population <|> species <|> boxAction
 
 add = do
   _ <- dissolveTokens.symbol "Add"
