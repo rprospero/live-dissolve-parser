@@ -2,17 +2,20 @@ module Configuration where
 
 import Prelude
 import Control.Alternative ((<|>))
+import Data.Array (many)
+import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
+import Data.Show.Generic (genericShow)
+import Data.String.CodeUnits (fromCharArray)
 import Text.Parsing.Parser (Parser)
 import Text.Parsing.Parser.Combinators (many1Till)
-import Text.Parsing.Parser.String (string)
+import Text.Parsing.Parser.String (noneOf, skipSpaces, string)
 import Util (dissolveTokens, signedFloat)
-import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 
 data ConfigurationPart
   = Generator (Array GeneratorPart)
   | Temperature Number
+  | InputCoordinates String String
 
 derive instance genericConfigurationPart :: Generic ConfigurationPart _
 
@@ -83,4 +86,13 @@ generator = do
 
 temperature = dissolveTokens.symbol "Temperature" *> (Temperature <$> dissolveTokens.float)
 
-configurationPart = temperature <|> generator
+inputCoordinates = do
+  _ <- dissolveTokens.symbol "InputCoordinates"
+  name <- dissolveTokens.identifier
+  path <- many $ noneOf [ ' ', '\n', '\t' ]
+  skipSpaces
+  _ <- string "End"
+  _ <- dissolveTokens.symbol "InputCoordinates"
+  pure (InputCoordinates name $ fromCharArray path)
+
+configurationPart = temperature <|> generator <|> inputCoordinates
