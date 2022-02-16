@@ -22,4 +22,7 @@ main = do
             it "accumulate" do
               input <- loadDissolveFile "examples/accumulate.txt"
               isRight input `shouldEqual` true
+            it "intensities" do
+              input <- loadDissolveFile "examples/intensities.txt"
+              isRight input `shouldEqual` true
             pending "singlewater.txt"

@@ -21,6 +21,7 @@ instance showConfigurationPart :: Show ConfigurationPart where
 
 data GeneratorPart
   = Add (Array GeneratorAddPart)
+  | Box (Array BoxPart)
 
 derive instance genericGeneratorPart :: Generic GeneratorPart _
 
@@ -37,6 +38,14 @@ derive instance genericGeneratorAddPart :: Generic GeneratorAddPart _
 instance showGeneratorAddPart :: Show GeneratorAddPart where
   show x = genericShow x
 
+data BoxPart
+  = Length Number Number Number
+
+derive instance genericBoxPart :: Generic BoxPart _
+
+instance showBoxPart :: Show BoxPart where
+  show x = genericShow x
+
 density = dissolveTokens.symbol "Density" *> (Density <$> signedFloat <*> dissolveTokens.symbol "atoms/A3")
 
 population = dissolveTokens.symbol "Population" *> (Population <$> dissolveTokens.integer)
@@ -51,7 +60,17 @@ add = do
   _ <- dissolveTokens.symbol "Add"
   pure (Add $ toUnfoldable contents)
 
-generatorPart = add
+length = dissolveTokens.symbol "Lengths" *> (Length <$> signedFloat <*> signedFloat <*> signedFloat)
+
+boxPart = length
+
+box = do
+  _ <- dissolveTokens.symbol "Box"
+  contents <- many1Till boxPart $ string "End"
+  _ <- dissolveTokens.symbol "Box"
+  pure (Box $ toUnfoldable contents)
+
+generatorPart = add <|> box
 
 generator = do
   _ <- dissolveTokens.symbol "Generator"
