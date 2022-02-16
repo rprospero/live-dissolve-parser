@@ -3,25 +3,43 @@ module Species where
 import Prelude
 import Control.Alternative ((<|>))
 import Data.Array (many)
-import Data.List.NonEmpty as List
 import Data.Generic.Rep (class Generic)
+import Data.List.NonEmpty as List
 import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser (Parser)
 import Text.Parsing.Parser.Combinators (many1Till, optionMaybe)
 import Text.Parsing.Parser.String (char, string)
-import Util (dissolveTokens, signedFloat, bool)
+import Util (bool, dissolveTokens, signedFloat)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
-  | Angle Int Int Int String Number Number
-  | Bond Int Int String Number Number
+  | Angle Int Int Int AngleInfo
+  | Bond Int Int BondInfo
   | Isotopologue String String Int String Int
   | Site String (Array SitePart)
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
 
 instance showSpeciesPart :: Show SpeciesPart where
+  show x = genericShow x
+
+data BondInfo
+  = BondRef String
+  | BondInfo String Number Number
+
+derive instance genericBondInfo :: Generic BondInfo _
+
+instance showBondInfo :: Show BondInfo where
+  show x = genericShow x
+
+data AngleInfo
+  = AngleRef String
+  | AngleInfo String Number Number
+
+derive instance genericAngleInfo :: Generic AngleInfo _
+
+instance showAngleInfo :: Show AngleInfo where
   show x = genericShow x
 
 data SitePart
@@ -39,10 +57,24 @@ atom :: Parser String SpeciesPart
 atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat <*> signedFloat <*> dissolveTokens.stringLiteral <*> optionMaybe signedFloat)
 
 bond :: Parser String SpeciesPart
-bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat)
+bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> bondRef)
+
+bondRef :: Parser String BondInfo
+bondRef = master <|> raw
+  where
+  master = char '@' *> (BondRef <$> dissolveTokens.identifier)
+
+  raw = BondInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
 angle :: Parser String SpeciesPart
-angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat)
+angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> angleRef)
+
+angleRef :: Parser String AngleInfo
+angleRef = master <|> raw
+  where
+  master = char '@' *> (AngleRef <$> dissolveTokens.identifier)
+
+  raw = AngleInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
 isotopologue :: Parser String SpeciesPart
 isotopologue = do
