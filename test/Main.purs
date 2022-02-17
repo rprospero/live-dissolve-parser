@@ -28,6 +28,22 @@ main = do
             it "mgo" do
               input <- loadDissolveFile "examples/mgo.txt"
               isRight input `shouldEqual` true
-            it "argon_dep0.1indep0.2.txt" do
-              input <- loadDissolveFile "examples/argon_dep0.1indep0.2.txt"
-              isRight input `shouldEqual` true
+            describe "Broadening" do
+              it "argon_dep0.1indep0.2.txt" do
+                input <- loadDissolveFile "examples/broadening/argon_dep0.1indep0.2.txt"
+                isRight input `shouldEqual` true
+              it "argon_dep0.2indep0.1.txt" do
+                input <- loadDissolveFile "examples/broadening/argon_dep0.2indep0.1.txt"
+                isRight input `shouldEqual` true
+              it "argon_qdep0.1.txt" do
+                input <- loadDissolveFile "examples/broadening/argon_qdep0.1.txt"
+                isRight input `shouldEqual` true
+              it "argon_qdep0.2.txt" do
+                input <- loadDissolveFile "examples/broadening/argon_qdep0.2.txt"
+                isRight input `shouldEqual` true
+              it "argon_qindep0.1.txt" do
+                input <- loadDissolveFile "examples/broadening/argon_qindep0.1.txt"
+                isRight input `shouldEqual` true
+              it "argon_qindep0.2.txt" do
+                input <- loadDissolveFile "examples/broadening/argon_qindep0.2.txt"
+                isRight input `shouldEqual` true
