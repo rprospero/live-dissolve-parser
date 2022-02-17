@@ -12,6 +12,8 @@ data PairPart
   | ShortRangeTruncation String
   | IncludeCoulomb Boolean
   | Parameters (Array String)
+  | ManualChargeSource Boolean
+  | ForceChargeSource Boolean
 
 derive instance genericPairPart :: Generic PairPart _
 
@@ -26,6 +28,10 @@ short = dissolveTokens.symbol "ShortRangeTruncation" *> (ShortRangeTruncation <$
 
 coulomb = dissolveTokens.symbol "IncludeCoulomb" *> (IncludeCoulomb <$> bool)
 
+manualChargeSource = dissolveTokens.symbol "ManualChargeSource" *> (ManualChargeSource <$> bool)
+
+forceChargeSource = dissolveTokens.symbol "ForceChargeSource" *> (ForceChargeSource <$> bool)
+
 parameters = punt "Parameters" Parameters
 
-pairPart = range <|> delta <|> short <|> coulomb <|> parameters
+pairPart = range <|> delta <|> short <|> coulomb <|> parameters <|> manualChargeSource <|> forceChargeSource
