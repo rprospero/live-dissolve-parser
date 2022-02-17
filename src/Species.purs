@@ -10,7 +10,7 @@ import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, try)
+import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string)
 import Text.Parsing.Parser.Token (letter)
 import Util (arbitrary, bool, notSpace, dissolveTokens, namedContainer, punt, signedFloat, MyParser)
@@ -20,6 +20,7 @@ data SpeciesPart
   | Angle Int Int Int AngleInfo
   | Bond Int Int BondInfo
   | Isotopologue (Array String)
+  | Torsion (Array String)
   | Site String (Array SitePart)
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
@@ -79,6 +80,9 @@ angleRef = master <|> raw
 
   raw = AngleInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
+torsion :: MyParser SpeciesPart
+torsion = punt "Torsion" Torsion
+
 isotopologue :: MyParser SpeciesPart
 isotopologue = punt "Isotopologue" Isotopologue
 
@@ -96,4 +100,4 @@ massWeighted = dissolveTokens.symbol "OriginMassWeighted" *> (OriginMassWeighted
 sitePart = xaxis <|> yaxis <|> massWeighted <|> origin
 
 speciesPart :: MyParser SpeciesPart
-speciesPart = atom <|> bond <|> angle <|> isotopologue <|> site
+speciesPart = atom <|> bond <|> angle <|> torsion <|> isotopologue <|> site <?> "Species Term"

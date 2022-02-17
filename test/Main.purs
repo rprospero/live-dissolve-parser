@@ -56,3 +56,8 @@ main = do
               parseTest "water3000-full" "energyforce1"
               parseTest "water3000-intra" "energyforce1"
               parseTest "water3000-vdw" "energyforce1"
+            describe "energyforce2" do
+              parseTest "full" "energyforce2"
+              parseTest "one" "energyforce2"
+              parseTest "two" "energyforce2"
+              parseTest "torsions" "energyforce2"
