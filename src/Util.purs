@@ -34,10 +34,10 @@ dissolveLanguage =
     , reservedOpNames: []
     }
 
-myStringChar :: MyParser (Maybe Char)
-myStringChar =
-  (Just <$> satisfy (\c → (c /= '\'') && (c /= '\n')))
-    <|> (string "\\'" *> pure (Just '\''))
+myStringChar :: Char -> MyParser (Maybe Char)
+myStringChar bound =
+  (Just <$> satisfy (\c → (c /= bound) && (c /= '\n')))
+    <|> ((string $ "\\" <> SCU.singleton bound) *> pure (Just bound))
     <?> "string character"
 
 myStringLiteral :: (MyParser String -> MyParser String) -> MyParser String
@@ -45,7 +45,9 @@ myStringLiteral lex = lex (go <?> "literal string")
   where
   go :: MyParser String
   go = do
-    maybeChars <- between (char '\'') (char '\'' <?> "end of string") (List.many myStringChar)
+    bound <- satisfy (\c -> (c == '"') || (c == '\''))
+    maybeChars <- List.many $ myStringChar bound
+    _ <- char bound <?> "end of string"
     pure $ SCU.fromCharArray $ List.toUnfoldable $ List.foldr folder List.Nil maybeChars
 
   folder :: Maybe Char -> List.List Char -> List.List Char
