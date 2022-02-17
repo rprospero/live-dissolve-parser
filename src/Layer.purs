@@ -38,6 +38,7 @@ data ModulePart
   | SiteB String String (Maybe (Tuple String String))
   | Site (Array String)
   | DistanceRange Number Number Number
+  | AngleRange Number Number Number
   | ExcludeSameMolecule Boolean
   | InternalData1D String String
   | Range Number
@@ -136,6 +137,9 @@ site = punt "Site" Site
 distanceRange :: MyParser ModulePart
 distanceRange = dissolveTokens.symbol "DistanceRange" *> (DistanceRange <$> dissolveTokens.float <*> dissolveTokens.float <*> dissolveTokens.float)
 
+angleRange :: MyParser ModulePart
+angleRange = dissolveTokens.symbol "AngleRange" *> (AngleRange <$> dissolveTokens.float <*> dissolveTokens.float <*> dissolveTokens.float)
+
 excludeSameMolecule :: MyParser ModulePart
 excludeSameMolecule = dissolveTokens.symbol "ExcludeSameMolecule" *> (ExcludeSameMolecule <$> ((dissolveTokens.symbol "On" *> pure true) <|> (dissolveTokens.identifier *> pure false)))
 
@@ -212,7 +216,7 @@ analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> analyser <|> rawNum
+modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> analyser <|> rawNum
 
 layerPart :: MyParser LayerPart
 layerPart = do

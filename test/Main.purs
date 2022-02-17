@@ -41,3 +41,5 @@ main = do
               parseTest "water" "calculate_avgmol"
             describe "calculate_cn" do
               parseTest "cn" "calculate_cn"
+            describe "calculate_dangle" do
+              parseTest "dangle" "calculate_dangle"
