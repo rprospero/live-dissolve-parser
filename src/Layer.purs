@@ -11,7 +11,7 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
-import Util (dissolveTokens, MyParser, signedFloat, sksContainer)
+import Util (dissolveTokens, MyParser, punt, signedFloat, sksContainer)
 
 data LayerPart
   = Module String (Maybe String) (Array ModulePart)
@@ -39,7 +39,7 @@ data ModulePart
   | InternalData1D String String
   | Range Number
   | Multiplicity Int Int Int
-  | QBroadening String Number
+  | QBroadening (Array String)
   | QDelta Number
   | QMax Number
   | QMin Number
@@ -52,6 +52,7 @@ data ModulePart
   | SourceSQs String
   | Data1D String String String (Array Data1DPart)
   | Threshold Number
+  | Isotopologue (Array String)
 
 derive instance genericModulePart :: Generic ModulePart _
 
@@ -142,7 +143,7 @@ qDelta :: MyParser ModulePart
 qDelta = dissolveTokens.symbol "QDelta" *> (QDelta <$> dissolveTokens.float)
 
 qBroadening :: MyParser ModulePart
-qBroadening = dissolveTokens.symbol "QBroadening" *> (QBroadening <$> dissolveTokens.identifier <*> dissolveTokens.float)
+qBroadening = punt "QBroadening" QBroadening
 
 windowFunction :: MyParser ModulePart
 windowFunction = dissolveTokens.symbol "WindowFunction" *> (WindowFunction <$> dissolveTokens.identifier)
@@ -171,7 +172,9 @@ data1DPart = y_
 
 data1D = sksContainer "Data1D" data1DPart Data1D <?> "Failed Data1D"
 
-modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sourceSQs <|> threshold
+isotopologue = punt "Isotopologue" Isotopologue
+
+modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sourceSQs <|> threshold <|> isotopologue
 
 layerPart :: MyParser LayerPart
 layerPart = do

@@ -13,13 +13,13 @@ import Text.Parsing.Parser (Parser)
 import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, try)
 import Text.Parsing.Parser.String (char, satisfy, string)
 import Text.Parsing.Parser.Token (letter)
-import Util (arbitrary, bool, notSpace, dissolveTokens, namedContainer, signedFloat, MyParser)
+import Util (arbitrary, bool, notSpace, dissolveTokens, namedContainer, punt, signedFloat, MyParser)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
   | Angle Int Int Int AngleInfo
   | Bond Int Int BondInfo
-  | Isotopologue String (Array String)
+  | Isotopologue (Array String)
   | Site String (Array SitePart)
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
@@ -80,12 +80,7 @@ angleRef = master <|> raw
   raw = AngleInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
 isotopologue :: MyParser SpeciesPart
-isotopologue = do
-  _ <- dissolveTokens.symbol "Isotopologue"
-  name <- dissolveTokens.stringLiteral
-  contents <- many1Till arbitrary $ char '\n'
-  dissolveTokens.whiteSpace
-  pure $ Isotopologue name $ NE.toUnfoldable contents
+isotopologue = punt "Isotopologue" Isotopologue
 
 site :: MyParser SpeciesPart
 site = namedContainer "Site" sitePart Site

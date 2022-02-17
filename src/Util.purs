@@ -104,5 +104,13 @@ notSpace = satisfy (\c -> (c /= ' ') && (c /= '\n') && (c /= '\t'))
 arbitrary :: MyParser String
 arbitrary = do
   text <- fromCharArray <$> some notSpace
-  _ <- many (char ' ')
+  _ <- many (satisfy (\c -> (c == ' ') || (c == '\t')))
   pure text
+
+punt :: forall a. String -> (Array String -> a) -> MyParser a
+punt kind constructor = do
+  _ <- dissolveTokens.symbol kind
+  dissolveTokens.whiteSpace
+  contents <- many1Till arbitrary $ char '\n'
+  dissolveTokens.whiteSpace
+  pure $ constructor $ NE.toUnfoldable contents

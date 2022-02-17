@@ -4,14 +4,14 @@ import Prelude
 import Control.Alternative ((<|>))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
-import Util (bool, dissolveTokens, signedFloat)
+import Util (bool, dissolveTokens, punt, signedFloat)
 
 data PairPart
   = Range Number
   | Delta Number
   | ShortRangeTruncation String
   | IncludeCoulomb Boolean
-  | Parameters String String Number String Number Number
+  | Parameters (Array String)
 
 derive instance genericPairPart :: Generic PairPart _
 
@@ -26,6 +26,6 @@ short = dissolveTokens.symbol "ShortRangeTruncation" *> (ShortRangeTruncation <$
 
 coulomb = dissolveTokens.symbol "IncludeCoulomb" *> (IncludeCoulomb <$> bool)
 
-parameters = dissolveTokens.symbol "Parameters" *> (Parameters <$> dissolveTokens.stringLiteral <*> dissolveTokens.identifier <*> signedFloat <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat)
+parameters = punt "Parameters" Parameters
 
 pairPart = range <|> delta <|> short <|> coulomb <|> parameters
