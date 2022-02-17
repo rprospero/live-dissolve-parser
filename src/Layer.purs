@@ -69,6 +69,12 @@ data ModulePart
   | RangeBEnabled Boolean
   | Export String String (Array Data1DPart)
   | Save String
+  | Test String
+  | TestAnalytic String
+  | TestReference String String (Array Data1DPart)
+  | TestReferenceInter (Array String)
+  | TestReferenceIntra Number
+  | TestThreshold Number
   | Exchangeable String
   | Analyser (Array AnalyserPart)
   | RawNum (Either Int Number)
@@ -223,6 +229,18 @@ export = do
 
 save = dissolveTokens.symbol "Save" *> (Save <$> dissolveTokens.identifier)
 
+test = dissolveTokens.symbol "Test" *> (Test <$> dissolveTokens.identifier)
+
+testAnalytic = dissolveTokens.symbol "TestAnalytic" *> (TestAnalytic <$> dissolveTokens.identifier)
+
+testReference = namedValueContainer "TestReference" data1DPart TestReference
+
+testReferenceInter = punt "TestReferenceInter" TestReferenceInter
+
+testReferenceIntra = dissolveTokens.symbol "TestReferenceIntra" *> (TestReferenceIntra <$> dissolveTokens.float)
+
+testThreshold = dissolveTokens.symbol "TestThreshold" *> (TestThreshold <$> dissolveTokens.float)
+
 exchangeable = dissolveTokens.symbol "Exchangeable" *> (Exchangeable <$> dissolveTokens.identifier)
 
 isotopologue = punt "Isotopologue" Isotopologue
@@ -239,7 +257,7 @@ analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> save <|> exchangeable <|> analyser <|> rawNum
+modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> save <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> exchangeable <|> analyser <|> rawNum
 
 layerPart :: MyParser LayerPart
 layerPart = do

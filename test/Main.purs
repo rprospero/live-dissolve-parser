@@ -50,3 +50,9 @@ main = do
               parseTest "sdf" "calculate_sdf"
             describe "correlations" do
               parseTest "sq" "correlations"
+            describe "energyforce1" do
+              parseTest "water3000-coul" "energyforce1"
+              parseTest "water3000-elec" "energyforce1"
+              parseTest "water3000-full" "energyforce1"
+              parseTest "water3000-intra" "energyforce1"
+              parseTest "water3000-vdw" "energyforce1"
