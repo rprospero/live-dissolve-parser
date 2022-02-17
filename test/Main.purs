@@ -48,3 +48,5 @@ main = do
               parseTest "npt" "calculate_rdf"
             describe "calculate_sdf" do
               parseTest "sdf" "calculate_sdf"
+            describe "correlations" do
+              parseTest "sq" "correlations"

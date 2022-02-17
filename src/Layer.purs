@@ -16,7 +16,7 @@ import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
 import Util (bool, container, dissolveTokens, MyParser, namedValueContainer, punt, signedFloat, signedNum, sksContainer)
 
 data LayerPart
-  = Module String (Maybe String) (Array ModulePart)
+  = Module (Array String) (Array ModulePart)
 
 derive instance genericLayerPart :: Generic LayerPart _
 
@@ -68,6 +68,8 @@ data ModulePart
   | RangeB Number Number
   | RangeBEnabled Boolean
   | Export String String (Array Data1DPart)
+  | Save String
+  | Exchangeable String
   | Analyser (Array AnalyserPart)
   | RawNum (Either Int Number)
 
@@ -219,6 +221,10 @@ export = do
   _ <- pure 1
   namedValueContainer "Export" data1DPart Export
 
+save = dissolveTokens.symbol "Save" *> (Save <$> dissolveTokens.identifier)
+
+exchangeable = dissolveTokens.symbol "Exchangeable" *> (Exchangeable <$> dissolveTokens.identifier)
+
 isotopologue = punt "Isotopologue" Isotopologue
 
 sampledVector = do
@@ -233,19 +239,11 @@ analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> analyser <|> rawNum
+modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> save <|> exchangeable <|> analyser <|> rawNum
 
 layerPart :: MyParser LayerPart
 layerPart = do
-  _ <- dissolveTokens.reserved "Module"
-  _ <- many (char ' ')
-  kind <- SCU.fromCharArray <$> many (satisfy (\c -> (c /= ' ') && (c /= '\n')))
-  name <-
-    optionMaybe do
-      skipMany (satisfy (\c -> c == ' '))
-      between (optional $ char '\'') (optional $ char '\'') $ SCU.fromCharArray <$> many (satisfy (\c -> (c /= ' ') && (c /= '\n')))
-  _ <- char '\n'
-  dissolveTokens.whiteSpace
+  terms <- punt "Module" identity
   contents <- many1Till modulePart $ string "End"
   _ <- dissolveTokens.reserved "Module"
-  pure (Module kind name $ toUnfoldable contents)
+  pure (Module terms $ toUnfoldable contents)
