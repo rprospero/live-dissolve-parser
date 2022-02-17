@@ -11,7 +11,7 @@ import Data.Maybe (Maybe(..))
 import Data.String.CodeUnits (fromCharArray)
 import Data.String.CodeUnits as SCU
 import Text.Parsing.Parser (Parser, fail)
-import Text.Parsing.Parser.Combinators (between, many1Till, (<?>))
+import Text.Parsing.Parser.Combinators (between, manyTill, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string)
 import Text.Parsing.Parser.Token (GenLanguageDef(..), LanguageDef, TokenParser, alphaNum, letter, makeTokenParser)
 
@@ -86,17 +86,17 @@ bool = t <|> f <?> "Boolean"
 container :: forall a x. String -> MyParser x -> (Array x -> a) -> MyParser a
 container name content constructor = do
   _ <- dissolveTokens.reserved name
-  contents <- many1Till content $ string "End"
+  contents <- manyTill content $ string "End"
   _ <- dissolveTokens.reserved name
-  pure (constructor $ NE.toUnfoldable contents)
+  pure (constructor $ List.toUnfoldable contents)
 
 namedContainer :: forall a x. String -> MyParser x -> (String -> Array x -> a) -> MyParser a
 namedContainer kind content constructor = do
   _ <- dissolveTokens.reserved kind
   name <- dissolveTokens.stringLiteral
-  contents <- many1Till content $ string "End"
+  contents <- manyTill content $ string "End"
   _ <- dissolveTokens.reserved kind
-  pure (constructor name $ NE.toUnfoldable contents)
+  pure (constructor name $ List.toUnfoldable contents)
 
 sksContainer :: forall a x. String -> MyParser x -> (String -> String -> String -> Array x -> a) -> MyParser a
 sksContainer kind content constructor = do
@@ -104,9 +104,9 @@ sksContainer kind content constructor = do
   file <- dissolveTokens.stringLiteral <?> "file"
   word <- dissolveTokens.identifier
   path <- dissolveTokens.stringLiteral <?> "path"
-  contents <- many1Till content $ string "End"
+  contents <- manyTill content $ string "End"
   _ <- dissolveTokens.reserved kind
-  pure (constructor file word path $ NE.toUnfoldable contents)
+  pure (constructor file word path $ List.toUnfoldable contents)
 
 notSpace :: MyParser Char
 notSpace = satisfy (\c -> (c /= ' ') && (c /= '\n') && (c /= '\t'))
@@ -121,6 +121,6 @@ punt :: forall a. String -> (Array String -> a) -> MyParser a
 punt kind constructor = do
   _ <- dissolveTokens.symbol kind
   dissolveTokens.whiteSpace
-  contents <- many1Till arbitrary $ char '\n'
+  contents <- manyTill arbitrary $ char '\n'
   dissolveTokens.whiteSpace
-  pure $ constructor $ NE.toUnfoldable contents
+  pure $ constructor $ List.toUnfoldable contents

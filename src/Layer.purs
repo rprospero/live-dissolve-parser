@@ -1,6 +1,7 @@
 module Layer where
 
 import Prelude
+import Analyser (analyserPart, AnalyserPart)
 import Control.Alternative ((<|>))
 import Data.Array (many)
 import Data.Either (Either)
@@ -12,7 +13,7 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
-import Util (dissolveTokens, MyParser, punt, signedFloat, signedNum, sksContainer)
+import Util (bool, container, dissolveTokens, MyParser, punt, signedFloat, signedNum, sksContainer)
 
 data LayerPart
   = Module String (Maybe String) (Array ModulePart)
@@ -47,6 +48,7 @@ data ModulePart
   | QMin Number
   | TestReflections String
   | Method String
+  | SourceRDF String
   | SourceRDFs String
   | WindowFunction String
   | IncludeBragg String
@@ -55,8 +57,13 @@ data ModulePart
   | Data1D String String String (Array Data1DPart)
   | Threshold Number
   | Isotopologue (Array String)
+  | SampledDouble String Number
   | SampledVector String String String
   | ErrorType String
+  | RangeA Number Number
+  | RangeB Number Number
+  | RangeBEnabled Boolean
+  | Analyser (Array AnalyserPart)
   | RawNum (Either Int Number)
 
 derive instance genericModulePart :: Generic ModulePart _
@@ -167,6 +174,8 @@ method = dissolveTokens.symbol "Method" *> (Method <$> dissolveTokens.identifier
 
 errorType = dissolveTokens.symbol "ErrorType" *> (ErrorType <$> dissolveTokens.identifier)
 
+sourceRDF = dissolveTokens.symbol "SourceRDF" *> (SourceRDF <$> dissolveTokens.stringLiteral)
+
 sourceRDFs = dissolveTokens.symbol "SourceRDFs" *> (SourceRDFs <$> dissolveTokens.stringLiteral)
 
 sourceSQs :: MyParser ModulePart
@@ -174,6 +183,14 @@ sourceSQs = dissolveTokens.symbol "SourceSQs" *> (SourceSQs <$> dissolveTokens.s
 
 threshold :: MyParser ModulePart
 threshold = dissolveTokens.symbol "Threshold" *> (Threshold <$> dissolveTokens.float)
+
+rangeA = dissolveTokens.symbol "RangeA" *> (RangeA <$> dissolveTokens.float <*> dissolveTokens.float)
+
+rangeB = dissolveTokens.symbol "RangeB" *> (RangeB <$> dissolveTokens.float <*> dissolveTokens.float)
+
+rangeBEnabled = dissolveTokens.symbol "RangeBEnabled" *> (RangeBEnabled <$> bool)
+
+sampledDouble = dissolveTokens.symbol "SampledDouble" *> (SampledDouble <$> dissolveTokens.stringLiteral <*> dissolveTokens.float)
 
 y_ = dissolveTokens.symbol "Y" *> (Y <$> dissolveTokens.integer)
 
@@ -191,9 +208,11 @@ sampledVector = do
   _ <- dissolveTokens.symbol "EndSampledVector"
   pure $ SampledVector name kind third
 
+analyser = container "Analyser" analyserPart Analyser
+
 rawNum = RawNum <$> signedNum
 
-modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> rawNum
+modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> analyser <|> rawNum
 
 layerPart :: MyParser LayerPart
 layerPart = do
