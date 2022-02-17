@@ -41,6 +41,9 @@ data ModulePart
   | AngleRange Number Number Number
   | ExcludeSameMolecule Boolean
   | InternalData1D String String
+  | RangeX Number Number Number
+  | RangeY Number Number Number
+  | RangeZ Number Number Number
   | Range Number
   | Multiplicity Int Int Int
   | QBroadening (Array String)
@@ -146,6 +149,15 @@ excludeSameMolecule = dissolveTokens.symbol "ExcludeSameMolecule" *> (ExcludeSam
 
 internalData1D = dissolveTokens.symbol "InternalData1D" *> (InternalData1D <$> dissolveTokens.stringLiteral <*> dissolveTokens.stringLiteral)
 
+rangeX :: MyParser ModulePart
+rangeX = dissolveTokens.symbol "RangeX" *> (RangeX <$> signedFloat <*> signedFloat <*> signedFloat)
+
+rangeY :: MyParser ModulePart
+rangeY = dissolveTokens.symbol "RangeY" *> (RangeY <$> signedFloat <*> signedFloat <*> signedFloat)
+
+rangeZ :: MyParser ModulePart
+rangeZ = dissolveTokens.symbol "RangeZ" *> (RangeZ <$> signedFloat <*> signedFloat <*> signedFloat)
+
 range :: MyParser ModulePart
 range = dissolveTokens.symbol "Range" *> (Range <$> dissolveTokens.float)
 
@@ -221,7 +233,7 @@ analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> analyser <|> rawNum
+modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> analyser <|> rawNum
 
 layerPart :: MyParser LayerPart
 layerPart = do

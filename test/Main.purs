@@ -46,3 +46,5 @@ main = do
             describe "calculate_rdf" do
               parseTest "rdf" "calculate_rdf"
               parseTest "npt" "calculate_rdf"
+            describe "calculate_sdf" do
+              parseTest "sdf" "calculate_sdf"
