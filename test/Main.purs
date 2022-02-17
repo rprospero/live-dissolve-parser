@@ -43,3 +43,6 @@ main = do
               parseTest "cn" "calculate_cn"
             describe "calculate_dangle" do
               parseTest "dangle" "calculate_dangle"
+            describe "calculate_rdf" do
+              parseTest "rdf" "calculate_rdf"
+              parseTest "npt" "calculate_rdf"

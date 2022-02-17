@@ -100,6 +100,15 @@ namedContainer kind content constructor = do
   _ <- dissolveTokens.reserved kind
   pure (constructor name $ List.toUnfoldable contents)
 
+namedValueContainer :: forall a x. String -> MyParser x -> (String -> String -> Array x -> a) -> MyParser a
+namedValueContainer kind content constructor = do
+  _ <- dissolveTokens.reserved kind
+  name <- dissolveTokens.identifier
+  value <- dissolveTokens.stringLiteral
+  contents <- manyTill content $ string "End"
+  _ <- dissolveTokens.reserved kind
+  pure (constructor name value $ List.toUnfoldable contents)
+
 sksContainer :: forall a x. String -> MyParser x -> (String -> String -> String -> Array x -> a) -> MyParser a
 sksContainer kind content constructor = do
   _ <- dissolveTokens.symbol kind

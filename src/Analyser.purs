@@ -12,7 +12,7 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
-import Util (MyParser, container, dissolveTokens, namedContainer, punt, signedFloat, signedNum, sksContainer)
+import Util (MyParser, container, dissolveTokens, namedContainer, namedValueContainer, punt, signedFloat, signedNum, sksContainer)
 
 data AnalyserPart
   = Site (Array String)
