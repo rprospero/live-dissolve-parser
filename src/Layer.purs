@@ -3,6 +3,7 @@ module Layer where
 import Prelude
 import Control.Alternative ((<|>))
 import Data.Array (many)
+import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -34,6 +35,7 @@ data ModulePart
   | Data String
   | SiteA String String (Maybe (Tuple String String))
   | SiteB String String (Maybe (Tuple String String))
+  | Site String String
   | DistanceRange Number Number Number
   | ExcludeSameMolecule Boolean
   | InternalData1D String String
@@ -53,6 +55,9 @@ data ModulePart
   | Data1D String String String (Array Data1DPart)
   | Threshold Number
   | Isotopologue (Array String)
+  | SampledVector String String String
+  | ErrorType String
+  | RawNum (Either Int Number)
 
 derive instance genericModulePart :: Generic ModulePart _
 
@@ -119,6 +124,8 @@ siteB = do
   second <- optionMaybe (Tuple <$> dissolveTokens.symbol x <*> dissolveTokens.stringLiteral)
   pure $ SiteB x y second
 
+site = dissolveTokens.symbol "Site" *> (Site <$> dissolveTokens.stringLiteral <*> dissolveTokens.stringLiteral)
+
 distanceRange :: MyParser ModulePart
 distanceRange = dissolveTokens.symbol "DistanceRange" *> (DistanceRange <$> dissolveTokens.float <*> dissolveTokens.float <*> dissolveTokens.float)
 
@@ -158,6 +165,8 @@ testReflections = dissolveTokens.symbol "TestReflections" *> (TestReflections <$
 
 method = dissolveTokens.symbol "Method" *> (Method <$> dissolveTokens.identifier)
 
+errorType = dissolveTokens.symbol "ErrorType" *> (ErrorType <$> dissolveTokens.identifier)
+
 sourceRDFs = dissolveTokens.symbol "SourceRDFs" *> (SourceRDFs <$> dissolveTokens.stringLiteral)
 
 sourceSQs :: MyParser ModulePart
@@ -174,7 +183,17 @@ data1D = sksContainer "Data1D" data1DPart Data1D <?> "Failed Data1D"
 
 isotopologue = punt "Isotopologue" Isotopologue
 
-modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sourceSQs <|> threshold <|> isotopologue
+sampledVector = do
+  _ <- dissolveTokens.symbol "SampledVector"
+  name <- dissolveTokens.stringLiteral
+  kind <- dissolveTokens.identifier
+  third <- dissolveTokens.symbol "@"
+  _ <- dissolveTokens.symbol "EndSampledVector"
+  pure $ SampledVector name kind third
+
+rawNum = RawNum <$> dissolveTokens.naturalOrFloat
+
+modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> rawNum
 
 layerPart :: MyParser LayerPart
 layerPart = do
