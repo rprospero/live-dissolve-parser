@@ -12,7 +12,7 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
-import Util (dissolveTokens, MyParser, punt, signedFloat, sksContainer)
+import Util (dissolveTokens, MyParser, punt, signedFloat, signedNum, sksContainer)
 
 data LayerPart
   = Module String (Maybe String) (Array ModulePart)
@@ -35,7 +35,7 @@ data ModulePart
   | Data String
   | SiteA String String (Maybe (Tuple String String))
   | SiteB String String (Maybe (Tuple String String))
-  | Site String String
+  | Site (Array String)
   | DistanceRange Number Number Number
   | ExcludeSameMolecule Boolean
   | InternalData1D String String
@@ -124,7 +124,7 @@ siteB = do
   second <- optionMaybe (Tuple <$> dissolveTokens.symbol x <*> dissolveTokens.stringLiteral)
   pure $ SiteB x y second
 
-site = dissolveTokens.symbol "Site" *> (Site <$> dissolveTokens.stringLiteral <*> dissolveTokens.stringLiteral)
+site = punt "Site" Site
 
 distanceRange :: MyParser ModulePart
 distanceRange = dissolveTokens.symbol "DistanceRange" *> (DistanceRange <$> dissolveTokens.float <*> dissolveTokens.float <*> dissolveTokens.float)
@@ -191,7 +191,7 @@ sampledVector = do
   _ <- dissolveTokens.symbol "EndSampledVector"
   pure $ SampledVector name kind third
 
-rawNum = RawNum <$> dissolveTokens.naturalOrFloat
+rawNum = RawNum <$> signedNum
 
 modulePart = data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> rawNum
 

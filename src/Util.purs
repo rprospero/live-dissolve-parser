@@ -3,6 +3,8 @@ module Util where
 import Prelude
 import Control.Alternative ((<|>))
 import Data.Array (toUnfoldable, some, many)
+import Data.Bifunctor (bimap)
+import Data.Either (Either)
 import Data.List as List
 import Data.List.NonEmpty as NE
 import Data.Maybe (Maybe(..))
@@ -65,6 +67,14 @@ signedFloat = negativeFloat <|> dissolveTokens.float
     _ ← char '-'
     x ← dissolveTokens.float
     pure $ -1.0 * x
+
+signedNum :: MyParser (Either Int Number)
+signedNum = negativeFloat <|> dissolveTokens.naturalOrFloat
+  where
+  negativeFloat = do
+    _ ← char '-'
+    x ← dissolveTokens.naturalOrFloat
+    pure $ bimap (-1 * _) (-1.0 * _) x
 
 bool :: MyParser Boolean
 bool = t <|> f <?> "Boolean"
