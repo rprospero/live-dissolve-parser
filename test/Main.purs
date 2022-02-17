@@ -16,18 +16,24 @@ main = do
     $ runSpec [ consoleReporter ] do
         describe "Live Parser Spec" do
           describe "Example files" do
-            it "singlewater" do
-              input <- loadDissolveFile "examples/singlewater.txt"
-              isRight input `shouldEqual` true
-            it "accumulate" do
-              input <- loadDissolveFile "examples/accumulate.txt"
-              isRight input `shouldEqual` true
-            it "intensities" do
-              input <- loadDissolveFile "examples/intensities.txt"
-              isRight input `shouldEqual` true
-            it "mgo" do
-              input <- loadDissolveFile "examples/mgo.txt"
-              isRight input `shouldEqual` true
+            describe "atomshake" do
+              it "singlewater" do
+                input <- loadDissolveFile "examples/atomshake/singlewater.txt"
+                isRight input `shouldEqual` true
+            describe "Accumulate" do
+              it "accumulate" do
+                input <- loadDissolveFile "examples/accumulate/accumulate.txt"
+                isRight input `shouldEqual` true
+            describe "Bragg" do
+              it "intensities" do
+                input <- loadDissolveFile "examples/bragg/intensities.txt"
+                isRight input `shouldEqual` true
+              it "intensities-111" do
+                input <- loadDissolveFile "examples/bragg/intensities-111.txt"
+                isRight input `shouldEqual` true
+              it "mgo" do
+                input <- loadDissolveFile "examples/bragg/mgo.txt"
+                isRight input `shouldEqual` true
             describe "Broadening" do
               it "argon_dep0.1indep0.2.txt" do
                 input <- loadDissolveFile "examples/broadening/argon_dep0.1indep0.2.txt"
