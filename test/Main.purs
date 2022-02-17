@@ -10,6 +10,11 @@ import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
+parseTest name path =
+  it name do
+    input <- loadDissolveFile $ "examples/" <> path <> "/" <> name <> ".txt"
+    isRight input `shouldEqual` true
+
 main :: Effect Unit
 main = do
   launchAff_
@@ -17,39 +22,17 @@ main = do
         describe "Live Parser Spec" do
           describe "Example files" do
             describe "atomshake" do
-              it "singlewater" do
-                input <- loadDissolveFile "examples/atomshake/singlewater.txt"
-                isRight input `shouldEqual` true
+              parseTest "singlewater" "atomshake"
             describe "Accumulate" do
-              it "accumulate" do
-                input <- loadDissolveFile "examples/accumulate/accumulate.txt"
-                isRight input `shouldEqual` true
+              parseTest "accumulate" "accumulate"
             describe "Bragg" do
-              it "intensities" do
-                input <- loadDissolveFile "examples/bragg/intensities.txt"
-                isRight input `shouldEqual` true
-              it "intensities-111" do
-                input <- loadDissolveFile "examples/bragg/intensities-111.txt"
-                isRight input `shouldEqual` true
-              it "mgo" do
-                input <- loadDissolveFile "examples/bragg/mgo.txt"
-                isRight input `shouldEqual` true
+              parseTest "intensities" "bragg"
+              parseTest "intensities-111" "bragg"
+              parseTest "mgo" "bragg"
             describe "Broadening" do
-              it "argon_dep0.1indep0.2.txt" do
-                input <- loadDissolveFile "examples/broadening/argon_dep0.1indep0.2.txt"
-                isRight input `shouldEqual` true
-              it "argon_dep0.2indep0.1.txt" do
-                input <- loadDissolveFile "examples/broadening/argon_dep0.2indep0.1.txt"
-                isRight input `shouldEqual` true
-              it "argon_qdep0.1.txt" do
-                input <- loadDissolveFile "examples/broadening/argon_qdep0.1.txt"
-                isRight input `shouldEqual` true
-              it "argon_qdep0.2.txt" do
-                input <- loadDissolveFile "examples/broadening/argon_qdep0.2.txt"
-                isRight input `shouldEqual` true
-              it "argon_qindep0.1.txt" do
-                input <- loadDissolveFile "examples/broadening/argon_qindep0.1.txt"
-                isRight input `shouldEqual` true
-              it "argon_qindep0.2.txt" do
-                input <- loadDissolveFile "examples/broadening/argon_qindep0.2.txt"
-                isRight input `shouldEqual` true
+              parseTest "argon_dep0.1indep0.2" "broadening"
+              parseTest "argon_dep0.2indep0.1" "broadening"
+              parseTest "argon_qdep0.1" "broadening"
+              parseTest "argon_qdep0.2" "broadening"
+              parseTest "argon_qindep0.1" "broadening"
+              parseTest "argon_qindep0.2" "broadening"
