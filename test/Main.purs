@@ -36,3 +36,6 @@ main = do
               parseTest "argon_qdep0.2" "broadening"
               parseTest "argon_qindep0.1" "broadening"
               parseTest "argon_qindep0.2" "broadening"
+            describe "calculate_avgmol" do
+              parseTest "bendy" "calculate_avgmol"
+              parseTest "water" "calculate_avgmol"
