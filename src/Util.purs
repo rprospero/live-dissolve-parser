@@ -154,3 +154,12 @@ updateInner name f s = caseJsonObject s inner s
       ps = maybe jsonEmptyObject identity $ lookup name ob
     in
       name := (f ps) ~> fromObject ob
+
+updateArray :: String -> (Array Json -> Json) -> Json -> Json
+updateArray name f s = caseJsonObject s inner s
+  where
+  inner ob =
+    let
+      ps = maybe jsonEmptyArray identity $ lookup name ob
+    in
+      name := (caseJsonArray ps f ps) ~> fromObject ob

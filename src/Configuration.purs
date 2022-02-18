@@ -6,8 +6,9 @@ import Foreign.Object
 import Prelude hiding (between)
 import Util
 import Control.Alternative ((<|>))
-import Data.Array (foldl, many)
+import Data.Array (cons, foldl, head, many, tail)
 import Data.Generic.Rep (class Generic)
+import Data.Maybe (maybe)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
 import Text.Parsing.Parser.Combinators (between)
@@ -124,21 +125,39 @@ popOnConfig xs s = foldl go s xs
   go s (Generator xs) = "generator" := (foldl writeGenerator jsonEmptyObject xs) ~> s
 
 writeGenerator :: Json -> GeneratorPart -> Json
-writeGenerator s (Add as) = updateInner "add" (\c -> foldl writeAdd c as) s
+writeGenerator s (Add as) = updateArray "add" (\c -> fromArray $ cons (writeAdd as) c) s
 
-writeGenerator s (Box as) = updateInner "box" identity s
+writeGenerator s (Box bs) = updateInner "box" (writeBox bs) s
 
-writeGenerator s (Parameters as) = updateInner "parameters" identity s
+writeGenerator s (Parameters ps) = updateInner "parameters" (writeParam ps) s
 
-writeAdd :: Json -> GeneratorAddPart -> Json
-writeAdd s (Density name units) = "density" := ("name" := name ~> "units" := units ~> jsonEmptyObject) ~> s
+writeAdd :: Array GeneratorAddPart -> Json
+writeAdd = foldl go jsonEmptyObject
+  where
+  go s (Density name units) = "density" := ("name" := name ~> "units" := units ~> jsonEmptyObject) ~> s
 
-writeAdd s (Population _) = s
+  go s (Population x) = "population" := x ~> s
 
-writeAdd s (Species _) = s
+  go s (Species x) = "species" := x ~> s
 
-writeAdd s (BoxAction _) = s
+  go s (BoxAction x) = "boxAction" := x ~> s
 
-writeAdd s (Rotate _) = s
+  go s (Rotate x) = "rotate" := x ~> s
 
-writeAdd s (Positioning _) = s
+  go s (Positioning x) = "positioning" := x ~> s
+
+writeBox bs s = foldl go s bs
+  where
+  go s (Length x y z) = "length" := [ x, y, z ] ~> s
+
+  go s (Angles x y z) = "angles" := [ x, y, z ] ~> s
+
+  go s (NonPeriodic x) = "nonPeriodic" := x ~> s
+
+writeParam ps s = foldl go s ps
+  where
+  go s (Param ps) =
+    let
+      name = maybe "undefined" identity $ head ps
+    in
+      name := tail ps ~> s
