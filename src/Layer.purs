@@ -77,7 +77,7 @@ data ModulePart
   | TestThreshold Number
   | Exchangeable String
   | Analyser (Array AnalyserPart)
-  | RawNum (Either Int Number)
+  | RawNum Number
 
 derive instance genericModulePart :: Generic ModulePart _
 

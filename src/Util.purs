@@ -4,7 +4,8 @@ import Prelude
 import Control.Alternative ((<|>))
 import Data.Array (toUnfoldable, some, many)
 import Data.Bifunctor (bimap)
-import Data.Either (Either)
+import Data.Either (Either(..))
+import Data.Int (toNumber)
 import Data.List as List
 import Data.List.NonEmpty as NE
 import Data.Maybe (Maybe(..))
@@ -70,8 +71,13 @@ signedFloat = negativeFloat <|> dissolveTokens.float
     x ← dissolveTokens.float
     pure $ -1.0 * x
 
-signedNum :: MyParser (Either Int Number)
-signedNum = negativeFloat <|> dissolveTokens.naturalOrFloat
+eitherFix :: forall a b. (a -> b) -> Either a b -> b
+eitherFix _ (Right x) = x
+
+eitherFix f (Left x) = f x
+
+signedNum :: MyParser Number
+signedNum = eitherFix toNumber <$> (negativeFloat <|> dissolveTokens.naturalOrFloat)
   where
   negativeFloat = do
     _ ← char '-'

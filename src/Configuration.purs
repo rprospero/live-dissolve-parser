@@ -8,7 +8,7 @@ import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
 import Text.Parsing.Parser.Combinators (between)
 import Text.Parsing.Parser.String (noneOf, skipSpaces, char, string)
-import Util (bool, container, dissolveTokens, signedFloat)
+import Util (arbitrary, bool, container, dissolveTokens, punt, signedNum)
 
 data ConfigurationPart
   = Generator (Array GeneratorPart)
@@ -23,6 +23,7 @@ instance showConfigurationPart :: Show ConfigurationPart where
 data GeneratorPart
   = Add (Array GeneratorAddPart)
   | Box (Array BoxPart)
+  | Parameters (Array Param)
 
 derive instance genericGeneratorPart :: Generic GeneratorPart _
 
@@ -30,7 +31,7 @@ instance showGeneratorPart :: Show GeneratorPart where
   show x = genericShow x
 
 data GeneratorAddPart
-  = Density Number String
+  = Density String String
   | Population Int
   | Species String
   | BoxAction String
@@ -52,7 +53,15 @@ derive instance genericBoxPart :: Generic BoxPart _
 instance showBoxPart :: Show BoxPart where
   show x = genericShow x
 
-density = dissolveTokens.symbol "Density" *> (Density <$> signedFloat <*> dissolveTokens.symbol "atoms/A3")
+data Param
+  = Param (Array String)
+
+derive instance genericParam :: Generic Param _
+
+instance showParam :: Show Param where
+  show x = genericShow x
+
+density = dissolveTokens.symbol "Density" *> (Density <$> arbitrary <*> dissolveTokens.symbol "atoms/A3")
 
 population = dissolveTokens.symbol "Population" *> (Population <$> myInt)
   where
@@ -70,9 +79,9 @@ generatorAddPart = density <|> population <|> species <|> boxAction <|> rotate <
 
 add = container "Add" generatorAddPart Add
 
-length = dissolveTokens.symbol "Lengths" *> (Length <$> signedFloat <*> signedFloat <*> signedFloat)
+length = dissolveTokens.symbol "Lengths" *> (Length <$> signedNum <*> signedNum <*> signedNum)
 
-angles = dissolveTokens.symbol "Angles" *> (Angles <$> signedFloat <*> signedFloat <*> signedFloat)
+angles = dissolveTokens.symbol "Angles" *> (Angles <$> signedNum <*> signedNum <*> signedNum)
 
 nonPeriodic = dissolveTokens.symbol "NonPeriodic" *> (NonPeriodic <$> bool)
 
@@ -80,7 +89,11 @@ boxPart = length <|> angles <|> nonPeriodic
 
 box = container "Box" boxPart Box
 
-generatorPart = add <|> box
+param = punt "Parameter" Param
+
+parameters = container "Parameters" param Parameters
+
+generatorPart = add <|> box <|> parameters
 
 generator = container "Generator" generatorPart Generator
 
