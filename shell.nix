@@ -12,6 +12,7 @@ let
 in
 pkgs.mkShell {
   buildInputs = [
+    pkgs.json2yaml
     pkgs.nodejs
     easy-ps.purs-0_14_4
     easy-ps.purs-tidy
