@@ -66,7 +66,7 @@ bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> diss
 bondRef :: MyParser BondInfo
 bondRef = master <|> raw
   where
-  master = char '@' *> (BondRef <$> dissolveTokens.identifier)
+  master = char '@' *> (BondRef <$> arbitrary <* dissolveTokens.whiteSpace)
 
   raw = BondInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
@@ -76,7 +76,7 @@ angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> d
 angleRef :: MyParser AngleInfo
 angleRef = master <|> raw
   where
-  master = char '@' *> (AngleRef <$> dissolveTokens.identifier)
+  master = char '@' *> (AngleRef <$> arbitrary <* dissolveTokens.whiteSpace)
 
   raw = AngleInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 

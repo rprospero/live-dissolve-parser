@@ -61,3 +61,7 @@ main = do
               parseTest "one" "energyforce2"
               parseTest "two" "energyforce2"
               parseTest "torsions" "energyforce2"
+            describe "energyforce3" do
+              parseTest "poe" "energyforce3"
+              parseTest "py4oh-ntf2" "energyforce3"
+              parseTest "py5-ntf2" "energyforce3"

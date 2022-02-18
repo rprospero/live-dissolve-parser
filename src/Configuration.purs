@@ -1,13 +1,14 @@
 module Configuration where
 
-import Prelude
+import Prelude hiding (between)
 import Control.Alternative ((<|>))
 import Data.Array (many)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
-import Text.Parsing.Parser.String (noneOf, skipSpaces, string)
-import Util (container, dissolveTokens, signedFloat)
+import Text.Parsing.Parser.Combinators (between)
+import Text.Parsing.Parser.String (noneOf, skipSpaces, char, string)
+import Util (bool, container, dissolveTokens, signedFloat)
 
 data ConfigurationPart
   = Generator (Array GeneratorPart)
@@ -33,6 +34,8 @@ data GeneratorAddPart
   | Population Int
   | Species String
   | BoxAction String
+  | Rotate Boolean
+  | Positioning String
 
 derive instance genericGeneratorAddPart :: Generic GeneratorAddPart _
 
@@ -41,6 +44,8 @@ instance showGeneratorAddPart :: Show GeneratorAddPart where
 
 data BoxPart
   = Length Number Number Number
+  | Angles Number Number Number
+  | NonPeriodic Boolean
 
 derive instance genericBoxPart :: Generic BoxPart _
 
@@ -49,19 +54,29 @@ instance showBoxPart :: Show BoxPart where
 
 density = dissolveTokens.symbol "Density" *> (Density <$> signedFloat <*> dissolveTokens.symbol "atoms/A3")
 
-population = dissolveTokens.symbol "Population" *> (Population <$> dissolveTokens.integer)
+population = dissolveTokens.symbol "Population" *> (Population <$> myInt)
+  where
+  myInt = ((between (char '\'') (char '\'') dissolveTokens.integer) <* dissolveTokens.whiteSpace) <|> dissolveTokens.integer
 
 species = dissolveTokens.symbol "Species" *> (Species <$> dissolveTokens.stringLiteral)
 
 boxAction = dissolveTokens.symbol "BoxAction" *> (BoxAction <$> dissolveTokens.identifier)
 
-generatorAddPart = density <|> population <|> species <|> boxAction
+rotate = dissolveTokens.symbol "Rotate" *> (Rotate <$> bool)
+
+positioning = dissolveTokens.symbol "Positioning" *> (Positioning <$> dissolveTokens.identifier)
+
+generatorAddPart = density <|> population <|> species <|> boxAction <|> rotate <|> positioning
 
 add = container "Add" generatorAddPart Add
 
 length = dissolveTokens.symbol "Lengths" *> (Length <$> signedFloat <*> signedFloat <*> signedFloat)
 
-boxPart = length
+angles = dissolveTokens.symbol "Angles" *> (Angles <$> signedFloat <*> signedFloat <*> signedFloat)
+
+nonPeriodic = dissolveTokens.symbol "NonPeriodic" *> (NonPeriodic <$> bool)
+
+boxPart = length <|> angles <|> nonPeriodic
 
 box = container "Box" boxPart Box
 
