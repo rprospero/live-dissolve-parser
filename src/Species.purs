@@ -1,8 +1,11 @@
 module Species where
 
+import Data.Argonaut.Core
+import Data.Argonaut.Encode
+import Foreign.Object
 import Prelude
 import Control.Alternative ((<|>))
-import Data.Array (many)
+import Data.Array (cons, foldl, many, snoc)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty as NE
 import Data.Maybe (Maybe(..))
@@ -13,7 +16,7 @@ import Text.Parsing.Parser (Parser)
 import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string)
 import Text.Parsing.Parser.Token (letter)
-import Util (arbitrary, bool, notSpace, dissolveTokens, namedContainer, punt, signedFloat, MyParser)
+import Util (MyParser, arbitrary, bool, dissolveTokens, namedContainer, notSpace, punt, signedFloat, updateArray, updateInner)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
@@ -88,3 +91,44 @@ sitePart = xaxis <|> yaxis <|> massWeighted <|> origin
 
 speciesPart :: MyParser SpeciesPart
 speciesPart = atom <|> bond <|> angle <|> torsion <|> improper <|> isotopologue <|> site <?> "Species Term"
+
+----------------------------------------------------------------------------
+popOnSpecies :: Array SpeciesPart -> Json -> Json
+popOnSpecies xs s = foldl go s xs
+  where
+  go s (Atom index element x y z cls charge) = updateArray "atoms" (\c -> fromArray $ flip snoc (writeAtom index element x y z cls charge) c) s
+
+  go s (Angle as) = updateArray "angles" (\c -> fromArray $ cons (encodeJson as) c) s
+
+  go s (Bond as) = updateArray "bonds" (\c -> fromArray $ cons (encodeJson as) c) s
+
+  go s (Torsion as) = updateArray "torsions" (\c -> fromArray $ cons (encodeJson as) c) s
+
+  go s (Improper as) = updateArray "impropers" (\c -> fromArray $ cons (encodeJson as) c) s
+
+  go s (Isotopologue as) = updateArray "isotopologues" (\c -> fromArray $ cons (encodeJson as) c) s
+
+  go s (Site name vs) = updateInner "site" (writeSite name vs) s
+
+writeSite name vs s = name := (foldl go jsonEmptyObject vs) ~> s
+  where
+  go s (Origin os) = "origin" := os ~> s
+
+  go s (XAxis os) = "xAxis" := os ~> s
+
+  go s (YAxis os) = "yAxis" := os ~> s
+
+  go s (OriginMassWeighted os) = "originMassWeighted" := os ~> s
+
+writeAtom index element x y z cls charge =
+  "index"
+    := index
+    ~> "element"
+    := element
+    ~> "position"
+    := [ x, y, z ]
+    ~> "label"
+    := cls
+    ~> "charge"
+    :=? charge
+    ~>? jsonEmptyObject

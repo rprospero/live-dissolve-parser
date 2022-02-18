@@ -14,6 +14,7 @@ main = do
   _ <-
     runAff (const $ pure unit) do
       input ← loadDissolveFile "examples/energyforce3/py5-ntf2.txt"
+      -- input ← loadDissolveFile "examples/accumulate/accumulate.txt"
       case input of
         Left x -> log $ show x
         Right x -> log $ stringify $ encodeJson $ asDissolve x
