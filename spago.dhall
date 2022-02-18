@@ -13,6 +13,8 @@ to generate this file without the comments in this block.
 { name = "my-project"
 , dependencies =
   [ "aff"
+  , "argonaut-codecs"
+  , "argonaut-core"
   , "arrays"
   , "bifunctors"
   , "console"
@@ -29,6 +31,7 @@ to generate this file without the comments in this block.
   , "psci-support"
   , "spec"
   , "strings"
+  , "transformers"
   , "tuples"
   ]
 , packages = ./packages.dhall

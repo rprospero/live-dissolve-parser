@@ -3,8 +3,11 @@ module Dissolve where
 import Prelude
 import Configuration (configurationPart)
 import Control.Alternative ((<|>))
+import Data.Array
 import Data.Either (Either)
 import Data.List.NonEmpty (toUnfoldable)
+import Data.Maybe
+import Data.Tuple
 import Effect.Aff (Aff)
 import Layer (layerPart)
 import Master (masterPart)
@@ -15,7 +18,7 @@ import Species (speciesPart)
 import Text.Parsing.Parser (ParseError, runParser)
 import Text.Parsing.Parser.Combinators (sepBy1)
 import Text.Parsing.Parser.String (skipSpaces)
-import Types (Section(..))
+import Types
 import Util (container, dissolveTokens, namedContainer, MyParser)
 
 section :: MyParser Section
@@ -43,3 +46,26 @@ layer = namedContainer "Layer" layerPart Layer
 
 master :: MyParser Section
 master = container "Master" masterPart Master
+
+asDissolve :: Array Section -> Dissolve
+asDissolve ss = Dissolve (head $ catMaybes $ map getMaster ss) (catMaybes $ map getConfig ss) (catMaybes $ map getLayer ss) (head $ catMaybes $ map getPair ss) (catMaybes $ map getSpecies ss)
+  where
+  getMaster (Master xs) = Just xs
+
+  getMaster _ = Nothing
+
+  getConfig (Configuration name xs) = Just $ Tuple name xs
+
+  getConfig _ = Nothing
+
+  getLayer (Layer name xs) = Just $ Tuple name xs
+
+  getLayer _ = Nothing
+
+  getPair (PairPotentials xs) = Just $ xs
+
+  getPair _ = Nothing
+
+  getSpecies (Species name xs) = Just $ Tuple name xs
+
+  getSpecies _ = Nothing
