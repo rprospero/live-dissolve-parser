@@ -17,24 +17,16 @@ import Util (arbitrary, bool, notSpace, dissolveTokens, namedContainer, punt, si
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
-  | Angle Int Int Int AngleInfo
-  | Bond Int Int BondInfo
+  | Angle (Array String)
+  | Bond (Array String)
   | Isotopologue (Array String)
   | Torsion (Array String)
+  | Improper (Array String)
   | Site String (Array SitePart)
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
 
 instance showSpeciesPart :: Show SpeciesPart where
-  show x = genericShow x
-
-data BondInfo
-  = BondRef String
-  | BondInfo String Number Number
-
-derive instance genericBondInfo :: Generic BondInfo _
-
-instance showBondInfo :: Show BondInfo where
   show x = genericShow x
 
 data AngleInfo
@@ -61,17 +53,10 @@ atom :: MyParser SpeciesPart
 atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat <*> signedFloat <*> dissolveTokens.stringLiteral <*> optionMaybe signedFloat)
 
 bond :: MyParser SpeciesPart
-bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> bondRef)
-
-bondRef :: MyParser BondInfo
-bondRef = master <|> raw
-  where
-  master = char '@' *> (BondRef <$> arbitrary <* dissolveTokens.whiteSpace)
-
-  raw = BondInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
+bond = punt "Bond" Bond
 
 angle :: MyParser SpeciesPart
-angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> angleRef)
+angle = punt "Angle" Angle
 
 angleRef :: MyParser AngleInfo
 angleRef = master <|> raw
@@ -82,6 +67,8 @@ angleRef = master <|> raw
 
 torsion :: MyParser SpeciesPart
 torsion = punt "Torsion" Torsion
+
+improper = punt "Improper" Improper
 
 isotopologue :: MyParser SpeciesPart
 isotopologue = punt "Isotopologue" Isotopologue
@@ -100,4 +87,4 @@ massWeighted = dissolveTokens.symbol "OriginMassWeighted" *> (OriginMassWeighted
 sitePart = xaxis <|> yaxis <|> massWeighted <|> origin
 
 speciesPart :: MyParser SpeciesPart
-speciesPart = atom <|> bond <|> angle <|> torsion <|> isotopologue <|> site <?> "Species Term"
+speciesPart = atom <|> bond <|> angle <|> torsion <|> improper <|> isotopologue <|> site <?> "Species Term"

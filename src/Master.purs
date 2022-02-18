@@ -13,6 +13,7 @@ data MasterPart
   = Angle (Array String)
   | Bond (Array String)
   | Torsion (Array String)
+  | Improper (Array String)
 
 derive instance genericMasterPart :: Generic MasterPart _
 
@@ -25,4 +26,6 @@ bond = punt "Bond" Bond
 
 torsion = punt "Torsion" Torsion
 
-masterPart = angle <|> bond <|> torsion
+improper = punt "Improper" Improper
+
+masterPart = angle <|> bond <|> torsion <|> improper
