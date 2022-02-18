@@ -1,9 +1,13 @@
 module Layer where
 
+import Data.Argonaut.Core
+import Data.Argonaut.Encode
+import Foreign.Object
 import Prelude
+import Util
 import Analyser (analyserPart, AnalyserPart)
 import Control.Alternative ((<|>))
-import Data.Array (many)
+import Data.Array (foldl, many, snoc)
 import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
@@ -13,7 +17,6 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
-import Util (bool, container, dissolveTokens, MyParser, namedValueContainer, punt, signedFloat, signedNum, sksContainer)
 
 data LayerPart
   = Module (Array String) (Array ModulePart)
@@ -30,7 +33,7 @@ data ModulePart
   | Angle Int Int Int Number
   | Format String String
   | BinWidth Number
-  | IntraBoradening String
+  | IntraBroadening String
   | Averaging Int
   | Target String
   | Data String
@@ -69,8 +72,8 @@ data ModulePart
   | RangeBEnabled Boolean
   | Export String String (Array Data1DPart)
   | Save String
-  | Test String
-  | TestAnalytic String
+  | Test Boolean
+  | TestAnalytic Boolean
   | TestReference String String (Array Data1DPart)
   | TestReferenceInter (Array String)
   | TestReferenceIntra Number
@@ -117,7 +120,7 @@ binWidth :: MyParser ModulePart
 binWidth = dissolveTokens.symbol "BinWidth" *> (BinWidth <$> dissolveTokens.float)
 
 intraBroadening :: MyParser ModulePart
-intraBroadening = dissolveTokens.symbol "IntraBroadening" *> (IntraBoradening <$> dissolveTokens.identifier)
+intraBroadening = dissolveTokens.symbol "IntraBroadening" *> (IntraBroadening <$> dissolveTokens.identifier)
 
 averaging :: MyParser ModulePart
 averaging = dissolveTokens.symbol "Averaging" *> (Averaging <$> dissolveTokens.integer)
@@ -229,9 +232,9 @@ export = do
 
 save = dissolveTokens.symbol "Save" *> (Save <$> dissolveTokens.identifier)
 
-test = dissolveTokens.symbol "Test" *> (Test <$> dissolveTokens.identifier)
+test = dissolveTokens.symbol "Test" *> (Test <$> bool)
 
-testAnalytic = dissolveTokens.symbol "TestAnalytic" *> (TestAnalytic <$> dissolveTokens.identifier)
+testAnalytic = dissolveTokens.symbol "TestAnalytic" *> (TestAnalytic <$> bool)
 
 testReference = namedValueContainer "TestReference" data1DPart TestReference
 
@@ -265,3 +268,128 @@ layerPart = do
   contents <- many1Till modulePart $ string "End"
   _ <- dissolveTokens.reserved "Module"
   pure (Module terms $ toUnfoldable contents)
+
+----------------------------------------------------------------------------
+popOnLayer :: Array LayerPart -> Json -> Json
+popOnLayer xs s = foldl go s xs
+  where
+  go s (Module terms parts) = updateArray "modules" (\c -> fromArray $ flip snoc (writeModule terms parts) c) s
+
+writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
+  where
+  go :: Json -> ModulePart -> Json
+  go s (Configuration x) = "configuration" := x ~> s
+
+  go s (Frequency x) = "frequency" := x ~> s
+
+  go s (Distance i j dist) = "distance" := ("i" := i ~> "j" := j ~> "measure" := dist ~> jsonEmptyObject) ~> s
+
+  go s (Angle i j k dist) = "angle" := ("i" := i ~> "j" := j ~> "k" := k ~> "measure" := dist ~> jsonEmptyObject) ~> s
+
+  go s (Format typ file) = "format" := ("type" := typ ~> "file" := file ~> jsonEmptyObject) ~> s
+
+  go s (BinWidth x) = "binWidth" := x ~> s
+
+  go s (IntraBroadening x) = "intraBroadening" := x ~> s
+
+  go s (Averaging x) = "averaging" := x ~> s
+
+  go s (Target x) = "target" := x ~> s
+
+  go s (Data x) = "data" := x ~> s
+
+  go s (SiteA name site Nothing) = "siteA" := ("species" := name ~> "site" := site ~> jsonEmptyObject) ~> s
+
+  go s (SiteA name site (Just (Tuple name2 site2))) = "siteA" := ("species" := name ~> "site" := site ~> "species2" := name2 ~> "site2" := site2 ~> jsonEmptyObject) ~> s
+
+  go s (SiteB name site Nothing) = "siteB" := ("species" := name ~> "site" := site ~> jsonEmptyObject) ~> s
+
+  go s (SiteB name site (Just (Tuple name2 site2))) = "siteB" := ("species" := name ~> "site" := site ~> "species2" := name2 ~> "site2" := site2 ~> jsonEmptyObject) ~> s
+
+  go s (Site ss) = "site" := ss ~> s
+
+  go s (DistanceRange x y z) = "distanceRange" := [ x, y, z ] ~> s
+
+  go s (AngleRange x y z) = "angleRange" := [ x, y, z ] ~> s
+
+  go s (ExcludeSameMolecule x) = "excludeSameMolecule" := x ~> s
+
+  go s (RangeX low high step) = "rangeX" := ("low" := low ~> "high" := high ~> "step" := step ~> jsonEmptyObject) ~> s
+
+  go s (RangeY low high step) = "rangeY" := ("low" := low ~> "high" := high ~> "step" := step ~> jsonEmptyObject) ~> s
+
+  go s (RangeZ low high step) = "rangeZ" := ("low" := low ~> "high" := high ~> "step" := step ~> jsonEmptyObject) ~> s
+
+  go s (Range x) = "range" := x ~> s
+
+  go s (InternalData1D source dest) = "internalData1D" := ("source" := source ~> "dest" := dest ~> jsonEmptyObject) ~> s
+
+  go s (Multiplicity x y z) = "multiplicity" := [ x, y, z ] ~> s
+
+  go s (QBroadening qs) = "qBroadening" := qs ~> s
+
+  go s (QDelta x) = "qDelta" := x ~> s
+
+  go s (QMax x) = "qMax" := x ~> s
+
+  go s (QMin x) = "qMin" := x ~> s
+
+  go s (TestReflections x) = "testReflections" := x ~> s
+
+  go s (Method x) = "method" := x ~> s
+
+  go s (SourceRDF x) = "sourceRDF" := x ~> s
+
+  go s (SourceRDFs x) = "sourceRDFs" := x ~> s
+
+  go s (WindowFunction x) = "windowFunction" := x ~> s
+
+  go s (IncludeBragg x) = "includeBragg" := x ~> s
+
+  go s (BraggQBroadening typ i j) = "braggQBroadening" := ("type" := typ ~> "i" := i ~> "j" := j ~> jsonEmptyObject) ~> s
+
+  go s (SourceSQs x) = "sourceSQs" := x ~> s
+
+  -- FIXME: Include Data1D parts
+  go s (Data1D loc kind file _) = "data1D" := ("location" := loc ~> "format" := kind ~> "file" := file ~> jsonEmptyObject) ~> s
+
+  go s (Threshold x) = "threshold" := x ~> s
+
+  go s (Isotopologue x) = "isotopologue" := x ~> s
+
+  go s (SampledDouble loc value) = "sampledDouble" := ("location" := loc ~> "value" := value ~> jsonEmptyObject) ~> s
+
+  go s (SampledVector loc value ref) = "sampledVector" := ("location" := loc ~> "value" := value ~> "ref" := ref ~> jsonEmptyObject) ~> s
+
+  go s (ErrorType x) = "errorType" := x ~> s
+
+  go s (RangeA low high) = "rangeA" := ("low" := low ~> "high" := high ~> jsonEmptyObject) ~> s
+
+  go s (RangeB low high) = "rangeB" := ("low" := low ~> "high" := high ~> jsonEmptyObject) ~> s
+
+  go s (RangeBEnabled x) = "rangeBEnabled" := x ~> s
+
+  go s (Test x) = "test" := x ~> s
+
+  go s (TestAnalytic x) = "test" := x ~> s
+
+  go s (TestReferenceInter xs) = "testReferenceInter" := xs ~> s
+
+  go s (TestReferenceIntra x) = "testReferenceIntra" := x ~> s
+
+  -- FIXME: Handle children
+  go s (TestReference name path _) = "testReference" := ("name" := name ~> "path" := path ~> jsonEmptyObject) ~> s
+
+  go s (TestThreshold x) = "testThreshold" := x ~> s
+
+  go s (Save x) = "save" := x ~> s
+
+  go s (Exchangeable x) = "exchagenable" := x ~> s
+
+  go s (RawNum x) = updateArray "rawNumbers" (fromArray <<< flip snoc (encodeJson x)) s
+
+  -- FIXME: Handle children
+  go s (Export format path _) = "export" := ("format" := format ~> "path" := path ~> jsonEmptyObject) ~> s
+
+  -- FIXME: Handle Analysers
+  go s (Analyser parts) = updateArray "analyser" (\c -> fromArray $ flip snoc (encodeJson 7) c) s

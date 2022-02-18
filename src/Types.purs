@@ -14,7 +14,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
-import Layer (LayerPart)
+import Layer
 
 data Section
   = Species String (Array SpeciesPart)
@@ -36,11 +36,16 @@ instance encodeDissolve :: EncodeJson Dissolve where
     flip execState jsonEmptyObject
       $ do
           _ <- modify (writeConfig config)
-          _ <- modify (\c -> "layer" := "Layer" ~> c)
+          _ <- modify (writeLayer layer)
           _ <- modify (writeSpecies species)
           _ <- modify (writePair pair)
           _ <- modify (writeMaster master)
           pure 7
+
+writeLayer :: (Array (Tuple String (Array LayerPart))) -> Json -> Json
+writeLayer xs s = "layer" := foldl go jsonEmptyObject xs ~> s
+  where
+  go state (Tuple name xs) = name := (popOnLayer xs jsonEmptyObject) ~> state
 
 writeSpecies :: (Array (Tuple String (Array SpeciesPart))) -> Json -> Json
 writeSpecies xs s = "species" := foldl go jsonEmptyObject xs ~> s
