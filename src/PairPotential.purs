@@ -15,7 +15,7 @@ data PairPart
   = Range Number
   | Delta Number
   | ShortRangeTruncation String
-  | IncludeCoulomb String
+  | IncludeCoulomb Boolean
   | Parameters (Array String)
   | ManualChargeSource Boolean
   | ForceChargeSource Boolean
@@ -32,7 +32,7 @@ delta = dissolveTokens.symbol "Delta" *> (Delta <$> dissolveTokens.float)
 
 short = dissolveTokens.symbol "ShortRangeTruncation" *> (ShortRangeTruncation <$> dissolveTokens.identifier)
 
-coulomb = dissolveTokens.symbol "IncludeCoulomb" *> (IncludeCoulomb <$> dissolveTokens.identifier)
+coulomb = dissolveTokens.symbol "IncludeCoulomb" *> (IncludeCoulomb <$> bool)
 
 manualChargeSource = dissolveTokens.symbol "ManualChargeSource" *> (ManualChargeSource <$> bool)
 
