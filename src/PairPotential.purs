@@ -1,15 +1,15 @@
 module PairPotential where
 
-import Prelude
-import Control.Alternative ((<|>))
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
+import Foreign.Object
+import Prelude
+import Util
+import Control.Alternative ((<|>))
 import Data.Array (catMaybes, foldl, head, tail)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
-import Foreign.Object
-import Util (bool, dissolveTokens, punt, signedFloat)
 
 data PairPart
   = Range Number
@@ -62,13 +62,6 @@ popOnPair xs s = foldl go s xs
 
   go s (ForceChargeSource x) = "forceChargeSource" := x ~> s
 
-  go s (Parameters xs) = caseJsonObject s (insertParam xs) s
-
-  insertParam :: Array String -> Object Json -> Json
-  insertParam xs ob = case head xs of
-    Nothing -> fromObject ob
-    Just name ->
-      let
-        ps = maybe jsonEmptyObject identity $ lookup "parameters" ob
-      in
-        "parameters" := (name := tail xs ~> ps) ~> fromObject ob
+  go s (Parameters xs) = updateInner "parameters" (\c -> name := tail xs ~> c) s
+    where
+    name = maybe "unnamed" identity $ head xs

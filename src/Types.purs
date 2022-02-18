@@ -7,7 +7,7 @@ import Master
 import PairPotential
 import Prelude
 import Species
-import Configuration (ConfigurationPart)
+import Configuration
 import Control.Monad.State (execState, modify)
 import Data.Array (catMaybes, foldl, head, tail)
 import Data.Generic.Rep (class Generic)
@@ -35,12 +35,17 @@ instance encodeDissolve :: EncodeJson Dissolve where
   encodeJson (Dissolve master config layer pair species) =
     flip execState jsonEmptyObject
       $ do
-          _ <- modify (\c -> "config" := "Config" ~> c)
+          _ <- modify (writeConfig config)
           _ <- modify (\c -> "layer" := "Layer" ~> c)
           _ <- modify (writePair pair)
           _ <- modify (\c -> "species" := "species" ~> c)
           _ <- modify (writeMaster master)
           pure 7
+
+writeConfig :: (Array (Tuple String (Array ConfigurationPart))) -> Json -> Json
+writeConfig xs s = "configuration" := foldl go jsonEmptyObject xs ~> s
+  where
+  go state (Tuple name xs) = name := (popOnConfig xs jsonEmptyObject) ~> s
 
 writePair :: Maybe (Array PairPart) -> Json -> Json
 writePair Nothing s = s

@@ -2,15 +2,18 @@ module Util where
 
 import Prelude
 import Control.Alternative ((<|>))
+import Data.Argonaut.Core
+import Data.Argonaut.Encode
 import Data.Array (toUnfoldable, some, many)
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..))
 import Data.Int (toNumber)
 import Data.List as List
 import Data.List.NonEmpty as NE
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.String.CodeUnits (fromCharArray)
 import Data.String.CodeUnits as SCU
+import Foreign.Object (lookup)
 import Text.Parsing.Parser (Parser, fail)
 import Text.Parsing.Parser.Combinators (between, manyTill, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string)
@@ -141,3 +144,13 @@ punt kind constructor = do
   contents <- manyTill arbitrary $ char '\n'
   dissolveTokens.whiteSpace
   pure $ constructor $ List.toUnfoldable contents
+
+--------------------------  Json helpers
+updateInner :: forall a. EncodeJson a => String -> (Json -> a) -> Json -> Json
+updateInner name f s = caseJsonObject s inner s
+  where
+  inner ob =
+    let
+      ps = maybe jsonEmptyObject identity $ lookup name ob
+    in
+      name := (f ps) ~> fromObject ob

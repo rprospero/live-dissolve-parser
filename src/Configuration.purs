@@ -1,14 +1,17 @@
 module Configuration where
 
+import Data.Argonaut.Core
+import Data.Argonaut.Encode
+import Foreign.Object
 import Prelude hiding (between)
+import Util
 import Control.Alternative ((<|>))
-import Data.Array (many)
+import Data.Array (foldl, many)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
 import Text.Parsing.Parser.Combinators (between)
 import Text.Parsing.Parser.String (noneOf, skipSpaces, char, string)
-import Util (arbitrary, bool, container, dissolveTokens, punt, signedNum)
 
 data ConfigurationPart
   = Generator (Array GeneratorPart)
@@ -109,3 +112,33 @@ inputCoordinates = do
   pure (InputCoordinates name $ fromCharArray path)
 
 configurationPart = temperature <|> generator <|> inputCoordinates
+
+----------------------------------------------------------------------------
+popOnConfig :: Array ConfigurationPart -> Json -> Json
+popOnConfig xs s = foldl go s xs
+  where
+  go s (Temperature x) = "temperature" := x ~> s
+
+  go s (InputCoordinates name value) = updateInner "inputCoordinates" (\x -> name := value ~> x) s
+
+  go s (Generator xs) = "generator" := (foldl writeGenerator jsonEmptyObject xs) ~> s
+
+writeGenerator :: Json -> GeneratorPart -> Json
+writeGenerator s (Add as) = updateInner "add" (\c -> foldl writeAdd c as) s
+
+writeGenerator s (Box as) = updateInner "box" identity s
+
+writeGenerator s (Parameters as) = updateInner "parameters" identity s
+
+writeAdd :: Json -> GeneratorAddPart -> Json
+writeAdd s (Density name units) = "density" := ("name" := name ~> "units" := units ~> jsonEmptyObject) ~> s
+
+writeAdd s (Population _) = s
+
+writeAdd s (Species _) = s
+
+writeAdd s (BoxAction _) = s
+
+writeAdd s (Rotate _) = s
+
+writeAdd s (Positioning _) = s
