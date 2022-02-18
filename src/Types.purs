@@ -37,15 +37,20 @@ instance encodeDissolve :: EncodeJson Dissolve where
       $ do
           _ <- modify (writeConfig config)
           _ <- modify (\c -> "layer" := "Layer" ~> c)
+          _ <- modify (writeSpecies species)
           _ <- modify (writePair pair)
-          _ <- modify (\c -> "species" := "species" ~> c)
           _ <- modify (writeMaster master)
           pure 7
+
+writeSpecies :: (Array (Tuple String (Array SpeciesPart))) -> Json -> Json
+writeSpecies xs s = "species" := foldl go jsonEmptyObject xs ~> s
+  where
+  go state (Tuple name xs) = name := (popOnSpecies xs jsonEmptyObject) ~> state
 
 writeConfig :: (Array (Tuple String (Array ConfigurationPart))) -> Json -> Json
 writeConfig xs s = "configuration" := foldl go jsonEmptyObject xs ~> s
   where
-  go state (Tuple name xs) = name := (popOnConfig xs jsonEmptyObject) ~> s
+  go state (Tuple name xs) = name := (popOnConfig xs jsonEmptyObject) ~> state
 
 writePair :: Maybe (Array PairPart) -> Json -> Json
 writePair Nothing s = s
