@@ -4,15 +4,16 @@ import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Foreign.Object
 import Prelude
+import Xml
 import Control.Alternative ((<|>))
-import Data.Array (many)
+import Data.Array (foldl)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
-import Text.Parsing.Parser.Combinators (sepBy, sepBy1, (<?>))
+import Text.Parsing.Parser.Combinators (sepBy1, (<?>))
 import Text.Parsing.Parser.String (char)
-import Util (MyParser, arbitrary, bool, dissolveTokens, named, namedContainer, punt, signedFloat, signedNum, updateArray, updateInner)
+import Util (arbitrary, dissolveTokens, named, signedFloat, signedNum)
 
 data ForceInfo
   = Harmonic Number Number
@@ -119,3 +120,30 @@ writeRef (Just (Ref name)) s =
     ~> "master"
     := name
     ~> s
+
+xmlRef :: (Maybe ForceInfo) -> XmlNode -> XmlNode
+xmlRef Nothing s = s
+
+xmlRef (Just (Ref name)) s = ("master" ::= name $ xmlEmptyNode "reference") ::=> s
+
+xmlRef (Just (Harmonic k eq)) s = (("eq" ::= eq) <<< ("k" ::= k) $ xmlEmptyNode "harmonic") ::=> s
+
+xmlRef (Just (Cos i j k l)) s = (("l" ::= l) <<< ("k" ::= k) <<< ("j" ::= j) <<< ("i" ::= i) $ xmlEmptyNode "cos") ::=> s
+
+xmlRef (Just (Cos3 i j k)) s = (("k" ::= k) <<< ("j" ::= j) <<< ("i" ::= i) $ xmlEmptyNode "cos3") ::=> s
+
+xmlRef (Just (LJ a b)) s = (("b" ::= b) <<< ("a" ::= a) $ xmlEmptyNode "lj") ::=> s
+
+xmlRef (Just (CosN cs)) s = (foldl go (xmlEmptyNode "CosN") cs) ::=> s
+  where
+  go state term = (("value" ::= term) $ xmlEmptyNode "term") ::=> state
+
+xmlRef (Just (CosNC cs)) s = (foldl go (xmlEmptyNode "CosNC") cs) ::=> s
+  where
+  go state term = (("value" ::= term) $ xmlEmptyNode "term") ::=> state
+
+xmlRef (Just (LJGeometric cs)) s = (foldl go (xmlEmptyNode "LJGeometric") cs) ::=> s
+  where
+  go state term = (("value" ::= term) $ xmlEmptyNode "term") ::=> state
+
+xmlRef (Just None) s = s

@@ -174,16 +174,16 @@ writeTorsion i j k l ref =
 xmlOnSpecies :: SpeciesPart -> XmlNode -> XmlNode
 xmlOnSpecies (Forcefield name) s = ("forcefield" ::= name) s
 
-xmlOnSpecies (Bond i j ref) s = (("i" ::= i) <<< ("j" ::= j) $ xmlEmptyNode "bond") ::=> s
+xmlOnSpecies (Bond i j ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) $ xmlEmptyNode "bond") ::=> s
 
-xmlOnSpecies (Angle i j k ref) s = (("i" ::= i) <<< ("j" ::= j) <<< ("j" ::= j) $ xmlEmptyNode "angle") ::=> s
+xmlOnSpecies (Angle i j k ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) <<< ("k" ::= k) $ xmlEmptyNode "angle") ::=> s
+
+xmlOnSpecies (Torsion i j k l ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) <<< ("k" ::= k) <<< ("l" ::= l) $ xmlEmptyNode "torsion") ::=> s
+
+xmlOnSpecies (Improper i j k l ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) <<< ("k" ::= k) <<< ("l" ::= l) $ xmlEmptyNode "angle") ::=> s
 
 -- go s (Atom index element x y z cls charge) = updateArray "atoms" (\c -> fromArray $ flip snoc (writeAtom index element x y z cls charge) c) s
--- go s (Angle i j k ref) = updateArray "angles" (\c -> fromArray $ flip snoc (writeAngle i j k ref) c) s
--- go s (Bond i j ref) = updateArray "bonds" (\c -> fromArray $ flip snoc (writeBond i j ref) c) s
 -- go s (BondType i j name) = updateArray "bondTypes" (\c -> fromArray $ flip snoc (writeBondType i j name) c) s
--- go s (Torsion i j k l ref) = updateArray "torsions" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
--- go s (Improper i j k l ref) = updateArray "impropers" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
 -- go s (Isotopologue as) = updateArray "isotopologues" (\c -> fromArray $ cons (encodeJson as) c) s
 -- go s (Site name vs) = updateInner "site" (writeSite name vs) s
 xmlOnSpecies _ s = s

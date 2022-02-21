@@ -19,8 +19,20 @@ instance showXmlNode :: Show XmlNode where
 xmlEmptyNode :: String -> XmlNode
 xmlEmptyNode name = XmlNode name M.empty []
 
-attr :: forall a. Show a => String -> a -> (XmlNode -> XmlNode)
-attr key value (XmlNode name as cs) = XmlNode name (M.insert key (show value) as) cs
+class ToAttr a where
+  toAttr :: a -> String
+
+instance toAttrString :: ToAttr String where
+  toAttr = identity
+
+instance toAttrNumber :: ToAttr Number where
+  toAttr = show
+
+instance toAttrInt :: ToAttr Int where
+  toAttr = show
+
+attr :: forall a. ToAttr a => String -> a -> (XmlNode -> XmlNode)
+attr key value (XmlNode name as cs) = XmlNode name (M.insert key (toAttr value) as) cs
 
 infix 5 attr as ::=
 
