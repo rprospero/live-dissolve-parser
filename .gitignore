@@ -10,3 +10,4 @@
 /.spago
 *.toml
 *.yaml
+*.json
