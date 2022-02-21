@@ -45,8 +45,9 @@ instance encodeDissolve :: EncodeJson Dissolve where
 
 instance toXmlDissolve :: ToXml Dissolve where
   toXml (Dissolve master config layer pair species) =
-    flip execState (xmlEmptyNode "Dissolve") $ do
-      modify ("foo" ::= "bar")
+    flip execState (xmlEmptyNode "Dissolve")
+      $ do
+          modify (xmlSpecies species)
 
 writeLayer :: (Array (Tuple String (Array LayerPart))) -> Json -> Json
 writeLayer xs s = "layer" := foldl go jsonEmptyObject xs ~> s
@@ -57,6 +58,11 @@ writeSpecies :: (Array (Tuple String (Array SpeciesPart))) -> Json -> Json
 writeSpecies xs s = "species" := foldl go jsonEmptyObject xs ~> s
   where
   go state (Tuple name xs) = name := (popOnSpecies xs jsonEmptyObject) ~> state
+
+xmlSpecies :: (Array (Tuple String (Array SpeciesPart))) -> XmlNode -> XmlNode
+xmlSpecies xs s = foldl go s xs
+  where
+  go state (Tuple name ss) = (foldl (flip xmlOnSpecies) ("name" ::= name $ xmlEmptyNode "species") ss) ::=> state
 
 writeConfig :: (Array (Tuple String (Array ConfigurationPart))) -> Json -> Json
 writeConfig xs s = "configuration" := foldl go jsonEmptyObject xs ~> s

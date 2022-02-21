@@ -13,6 +13,7 @@ import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser.Combinators (optionMaybe, (<?>))
 import Text.Parsing.Parser.String (char)
 import Util
+import Xml
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
@@ -169,3 +170,20 @@ writeTorsion i j k l ref =
     ~> "i"
     := i
     ~> writeRef ref jsonEmptyObject
+
+xmlOnSpecies :: SpeciesPart -> XmlNode -> XmlNode
+xmlOnSpecies (Forcefield name) s = ("forcefield" ::= name) s
+
+xmlOnSpecies (Bond i j ref) s = (("i" ::= i) <<< ("j" ::= j) $ xmlEmptyNode "bond") ::=> s
+
+xmlOnSpecies (Angle i j k ref) s = (("i" ::= i) <<< ("j" ::= j) <<< ("j" ::= j) $ xmlEmptyNode "angle") ::=> s
+
+-- go s (Atom index element x y z cls charge) = updateArray "atoms" (\c -> fromArray $ flip snoc (writeAtom index element x y z cls charge) c) s
+-- go s (Angle i j k ref) = updateArray "angles" (\c -> fromArray $ flip snoc (writeAngle i j k ref) c) s
+-- go s (Bond i j ref) = updateArray "bonds" (\c -> fromArray $ flip snoc (writeBond i j ref) c) s
+-- go s (BondType i j name) = updateArray "bondTypes" (\c -> fromArray $ flip snoc (writeBondType i j name) c) s
+-- go s (Torsion i j k l ref) = updateArray "torsions" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
+-- go s (Improper i j k l ref) = updateArray "impropers" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
+-- go s (Isotopologue as) = updateArray "isotopologues" (\c -> fromArray $ cons (encodeJson as) c) s
+-- go s (Site name vs) = updateInner "site" (writeSite name vs) s
+xmlOnSpecies _ s = s
