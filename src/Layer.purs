@@ -105,6 +105,7 @@ data ModulePart
   | Torsion Int Int Int Int (Array Number)
   | Improper Int Int Int Int (Array Number)
   | NSteps Int
+  | InternalTest Boolean
   | Exchangeable (Array String)
   | Reference String String (Array Data1DPart)
   | Analyser (Array AnalyserPart)
@@ -324,6 +325,8 @@ improper = dissolveTokens.symbol "Improper" *> (Improper <$> dissolveTokens.inte
 
 nSteps = dissolveTokens.symbol "NSteps" *> (NSteps <$> dissolveTokens.integer)
 
+internalTest = dissolveTokens.symbol "InternalTest" *> (InternalTest <$> bool)
+
 exchangeable = punt "Exchangeable" Exchangeable
 
 expansionFunction = dissolveTokens.symbol "ExpansionFunction" *> (ExpansionFunction <$> dissolveTokens.identifier)
@@ -344,7 +347,7 @@ analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = species <|> atomType <|> totalCharge <|> bond <|> angleRange <|> angle <|> torsion <|> improper <|> data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> format <|> binWidth <|> intraBroadening <|> averagingScheme <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> saveRepresentativeGR <|> saveEstimatedPartials <|> saveReference <|> saveSQ <|> save <|> eReq <|> inpAFile <|> nPItSs <|> feedback <|> referenceFTQMin <|> referenceFTQMax <|> referenceNormalisation <|> referenceWindowFunction <|> reference <|> pCofFile <|> onlyWhenEnergyStable <|> normalisation <|> overwritePotentials <|> testAbsEnergyEP <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> expansionFunction <|> nSteps <|> exchangeable <|> analyser <|> rawNum <?> "Module Part"
+modulePart = species <|> atomType <|> totalCharge <|> bond <|> angleRange <|> angle <|> torsion <|> improper <|> data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> format <|> binWidth <|> intraBroadening <|> averagingScheme <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> saveRepresentativeGR <|> saveEstimatedPartials <|> saveReference <|> saveSQ <|> save <|> eReq <|> inpAFile <|> nPItSs <|> feedback <|> referenceFTQMin <|> referenceFTQMax <|> referenceNormalisation <|> referenceWindowFunction <|> reference <|> pCofFile <|> onlyWhenEnergyStable <|> normalisation <|> overwritePotentials <|> testAbsEnergyEP <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> expansionFunction <|> nSteps <|> internalTest <|> exchangeable <|> analyser <|> rawNum <?> "Module Part"
 
 module_ :: MyParser LayerPart
 module_ = do
@@ -519,6 +522,8 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
   go s (TotalCharge x) = "totalCharge" := x ~> s
 
   go s (NSteps x) = "nSteps" := x ~> s
+
+  go s (InternalTest x) = "internalTest" := x ~> s
 
   go s (Bond i j const eq) = updateArray "bonds" (fromArray <<< flip snoc ("eq" := eq ~> "const" := const ~> "j" := j ~> "i" := i ~> jsonEmptyObject)) s
 

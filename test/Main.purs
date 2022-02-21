@@ -94,3 +94,6 @@ main = do
               parseTest "benzene" "md"
             describe "molshake" do
               parseTest "benzene" "molshake"
+            describe "rdfmethod" do
+              parseTest "cells" "rdfmethod"
+              parseTest "simple" "rdfmethod"

@@ -18,6 +18,7 @@ data ConfigurationPart
   = Generator (Array GeneratorPart)
   | Temperature Number
   | SizeFactor Number
+  | CellDivisionLength Number
   | InputCoordinates String String
 
 derive instance genericConfigurationPart :: Generic ConfigurationPart _
@@ -106,6 +107,8 @@ temperature = dissolveTokens.symbol "Temperature" *> (Temperature <$> dissolveTo
 
 sizeFactor = dissolveTokens.symbol "SizeFactor" *> (SizeFactor <$> dissolveTokens.float)
 
+cellDivisionLength = dissolveTokens.symbol "CellDivisionLength" *> (CellDivisionLength <$> dissolveTokens.float)
+
 inputCoordinates = do
   _ <- dissolveTokens.symbol "InputCoordinates"
   name <- dissolveTokens.identifier
@@ -115,7 +118,7 @@ inputCoordinates = do
   _ <- dissolveTokens.symbol "InputCoordinates"
   pure (InputCoordinates name $ fromCharArray path)
 
-configurationPart = temperature <|> generator <|> inputCoordinates <|> sizeFactor
+configurationPart = temperature <|> generator <|> inputCoordinates <|> sizeFactor <|> cellDivisionLength
 
 ----------------------------------------------------------------------------
 popOnConfig :: Array ConfigurationPart -> Json -> Json
@@ -124,6 +127,8 @@ popOnConfig xs s = foldl go s xs
   go s (Temperature x) = "temperature" := x ~> s
 
   go s (SizeFactor x) = "sizeFactor" := x ~> s
+
+  go s (CellDivisionLength x) = "cellDivisionLength" := x ~> s
 
   go s (InputCoordinates name value) = updateInner "inputCoordinates" (\x -> name := value ~> x) s
 
