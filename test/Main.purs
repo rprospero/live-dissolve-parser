@@ -86,3 +86,7 @@ main = do
               parseTest "spcfw" "ff"
               parseTest "uff-nmethylformamide" "ff"
               pending "uff4mof-mof5" -- Works, but uses too much memory
+            describe "inputs" do
+              parseTest "benzene" "inputs"
+              parseTest "py5-ntf2" "inputs"
+              parseTest "water" "inputs"
