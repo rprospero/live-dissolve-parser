@@ -22,6 +22,7 @@ data ForceInfo
   | CosN (Array Number)
   | CosNC (Array Number)
   | LJ Number Number
+  | LJGeometric Number Number
   | None
 
 derive instance genericForceInfo :: Generic ForceInfo _
@@ -29,7 +30,7 @@ derive instance genericForceInfo :: Generic ForceInfo _
 instance showForceInfo :: Show ForceInfo where
   show x = genericShow x
 
-forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> lj <?> "Force Info"
+forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> ljGeometric <|> lj <?> "Force Info"
   where
   harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> signedFloat <*> signedFloat)
 
@@ -42,6 +43,8 @@ forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> lj
   cos = dissolveTokens.symbol "Cos" *> (Cos <$> signedFloat <*> signedFloat <*> signedFloat <*> signedFloat)
 
   lj = dissolveTokens.symbol "LJ" *> (LJ <$> signedFloat <*> signedFloat)
+
+  ljGeometric = dissolveTokens.symbol "LJGeometric" *> (LJGeometric <$> signedFloat <*> signedFloat)
 
   none = dissolveTokens.symbol "None" *> pure None
 
@@ -89,6 +92,14 @@ writeRef (Just (CosN xs)) s =
 
 writeRef (Just (LJ a b)) s =
   "type" := "LJ"
+    ~> "a"
+    := a
+    ~> "b"
+    := b
+    ~> s
+
+writeRef (Just (LJGeometric a b)) s =
+  "type" := "LJGeometric"
     ~> "a"
     := a
     ~> "b"
