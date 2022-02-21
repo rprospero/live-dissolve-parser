@@ -4,7 +4,7 @@ import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Foreign.Object
 import Prelude
-import Force (ForceInfo(..), writeRef)
+import Force
 import Control.Alternative ((<|>))
 import Data.Array (cons, foldl, many, snoc)
 import Data.Generic.Rep (class Generic)
@@ -38,16 +38,6 @@ derive instance genericSitePart :: Generic SitePart _
 
 instance showSitePart :: Show SitePart where
   show x = genericShow x
-
-forceInfo = harmonic <|> ref
-  where
-  harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> signedFloat <*> signedFloat)
-
-  ref = do
-    _ <- char '@'
-    value <- arbitrary
-    dissolveTokens.whiteSpace
-    pure $ Ref value
 
 atom :: MyParser SpeciesPart
 atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat <*> signedFloat <*> dissolveTokens.stringLiteral <*> optionMaybe signedFloat)

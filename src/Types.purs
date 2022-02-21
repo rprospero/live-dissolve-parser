@@ -62,34 +62,6 @@ writePair Nothing s = s
 
 writePair (Just xs) s = "PairPotentials" := (popOnPair xs jsonEmptyObject) ~> s
 
-writeMaster (Just xs) s =
-  "Master"
-    := ( "impropers"
-          := (catMaybes $ map getImproper $ xs)
-          ~> "torsions"
-          := (catMaybes $ map getTorsion $ xs)
-          ~> "bond"
-          := (catMaybes $ map getBond $ xs)
-          ~> "angle"
-          := (catMaybes $ map getAngle $ xs)
-          ~> jsonEmptyObject
-      )
-    ~> s
+writeMaster (Just xs) s = "master" := (popOnMaster xs jsonEmptyObject) ~> s
 
 writeMaster Nothing s = s
-
-writeMaster (Just xs) s =
-  "Master"
-    := ( "impropers"
-          := (catMaybes $ map getImproper $ xs)
-          ~> "torsions"
-          := (catMaybes $ map getTorsion $ xs)
-          ~> "bond"
-          := (catMaybes $ map getBond $ xs)
-          ~> "angle"
-          := (catMaybes $ map getAngle $ xs)
-          ~> jsonEmptyObject
-      )
-    ~> s
-
--- "contents" := fromArray (map encodeJson xs) ~> jsonEmptyObject
