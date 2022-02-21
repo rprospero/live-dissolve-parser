@@ -5,7 +5,7 @@ import Data.Argonaut.Encode
 import Foreign.Object
 import Prelude
 import Util
-import Analyser (analyserPart, AnalyserPart)
+import Analyser (AnalyserPart, analyserPart)
 import Control.Alternative ((<|>))
 import Data.Array (foldl, many, snoc)
 import Data.Either (Either)
@@ -20,6 +20,7 @@ import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
 
 data LayerPart
   = Module (Array String) (Array ModulePart)
+  | LayerFrequency Int
 
 derive instance genericLayerPart :: Generic LayerPart _
 
@@ -35,6 +36,7 @@ data ModulePart
   | BinWidth Number
   | IntraBroadening String
   | Averaging Int
+  | AveragingScheme String
   | Target String
   | Data String
   | SiteA String String (Maybe (Tuple String String))
@@ -72,13 +74,32 @@ data ModulePart
   | RangeBEnabled Boolean
   | Export String String (Array Data1DPart)
   | Save String
+  | OnlyWhenEnergyStable Boolean
+  | EReq Number
+  | InpAFile String
+  | NPItSs Int
+  | Feedback Number
+  | PCofFile String
+  | ReferenceFTQMin Number
+  | ReferenceFTQMax Number
+  | ReferenceNormalisation String
+  | ReferenceWindowFunction String
+  | SaveRepresentativeGR Boolean
+  | SaveEstimatedPartials Boolean
+  | SaveReference Boolean
+  | SaveSQ Boolean
+  | OverwritePotentials Boolean
+  | Normalisation String
+  | ExpansionFunction String
   | Test Boolean
+  | TestAbsEnergyEP String Number
   | TestAnalytic Boolean
   | TestReference String String (Array Data1DPart)
   | TestReferenceInter (Array String)
   | TestReferenceIntra Number
   | TestThreshold Number
   | Exchangeable String
+  | Reference String String (Array Data1DPart)
   | Analyser (Array AnalyserPart)
   | RawNum Number
 
@@ -89,6 +110,7 @@ instance showModulePart :: Show ModulePart where
 
 data Data1DPart
   = Y Int
+  | XMin Number
 
 derive instance genericData1Part :: Generic Data1DPart _
 
@@ -120,10 +142,12 @@ binWidth :: MyParser ModulePart
 binWidth = dissolveTokens.symbol "BinWidth" *> (BinWidth <$> dissolveTokens.float)
 
 intraBroadening :: MyParser ModulePart
-intraBroadening = dissolveTokens.symbol "IntraBroadening" *> (IntraBroadening <$> dissolveTokens.identifier)
+intraBroadening = dissolveTokens.symbol "IntraBroadening" *> (IntraBroadening <$> allString)
 
 averaging :: MyParser ModulePart
 averaging = dissolveTokens.symbol "Averaging" *> (Averaging <$> dissolveTokens.integer)
+
+averagingScheme = dissolveTokens.symbol "AveragingScheme" *> (AveragingScheme <$> dissolveTokens.identifier)
 
 target :: MyParser ModulePart
 target = dissolveTokens.symbol "Target" *> (Target <$> dissolveTokens.stringLiteral)
@@ -194,7 +218,7 @@ includeBragg :: MyParser ModulePart
 includeBragg = dissolveTokens.symbol "IncludeBragg" *> (IncludeBragg <$> dissolveTokens.stringLiteral)
 
 braggQBroadening :: MyParser ModulePart
-braggQBroadening = dissolveTokens.symbol "BraggQBroadening" *> (BraggQBroadening <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat)
+braggQBroadening = dissolveTokens.symbol "BraggQBroadening" *> (BraggQBroadening <$> allString <*> signedFloat <*> signedFloat)
 
 testReflections = dissolveTokens.symbol "TestReflections" *> (TestReflections <$> dissolveTokens.stringLiteral)
 
@@ -222,7 +246,9 @@ sampledDouble = dissolveTokens.symbol "SampledDouble" *> (SampledDouble <$> diss
 
 y_ = dissolveTokens.symbol "Y" *> (Y <$> dissolveTokens.integer)
 
-data1DPart = y_
+xMin = dissolveTokens.symbol "XMin" *> (XMin <$> signedFloat)
+
+data1DPart = y_ <|> xMin
 
 data1D = sksContainer "Data1D" data1DPart Data1D <?> "Failed Data1D"
 
@@ -232,7 +258,41 @@ export = do
 
 save = dissolveTokens.symbol "Save" *> (Save <$> dissolveTokens.identifier)
 
+onlyWhenEnergyStable = dissolveTokens.symbol "OnlyWhenEnergyStable" *> (OnlyWhenEnergyStable <$> bool)
+
+eReq = dissolveTokens.symbol "EReq" *> (EReq <$> signedFloat)
+
+inpAFile = dissolveTokens.symbol "InpAFile" *> (InpAFile <$> dissolveTokens.stringLiteral)
+
+nPItSs = dissolveTokens.symbol "NPItSs" *> (NPItSs <$> dissolveTokens.integer)
+
+feedback = dissolveTokens.symbol "Feedback" *> (Feedback <$> signedFloat)
+
+pCofFile = dissolveTokens.symbol "PCofFile" *> (PCofFile <$> dissolveTokens.stringLiteral)
+
+referenceFTQMin = dissolveTokens.symbol "ReferenceFTQMin" *> (ReferenceFTQMin <$> signedFloat)
+
+referenceFTQMax = dissolveTokens.symbol "ReferenceFTQMax" *> (ReferenceFTQMax <$> signedFloat)
+
+referenceNormalisation = dissolveTokens.symbol "ReferenceNormalisation" *> (ReferenceNormalisation <$> allString)
+
+referenceWindowFunction = dissolveTokens.symbol "ReferenceWindowFunction" *> (ReferenceWindowFunction <$> allString)
+
+saveRepresentativeGR = dissolveTokens.symbol "SaveRepresentativeGR" *> (SaveRepresentativeGR <$> bool)
+
+saveEstimatedPartials = dissolveTokens.symbol "SaveEstimatedPartials" *> (SaveEstimatedPartials <$> bool)
+
+saveReference = dissolveTokens.symbol "SaveReference" *> (SaveReference <$> bool)
+
+saveSQ = dissolveTokens.symbol "SaveSQ" *> (SaveSQ <$> bool)
+
+overwritePotentials = dissolveTokens.symbol "OverwritePotentials" *> (OverwritePotentials <$> bool)
+
+normalisation = dissolveTokens.symbol "Normalisation" *> (Normalisation <$> dissolveTokens.identifier)
+
 test = dissolveTokens.symbol "Test" *> (Test <$> bool)
+
+testAbsEnergyEP = dissolveTokens.symbol "TestAbsEnergyEP" *> (TestAbsEnergyEP <$> allString <*> dissolveTokens.float)
 
 testAnalytic = dissolveTokens.symbol "TestAnalytic" *> (TestAnalytic <$> bool)
 
@@ -246,6 +306,8 @@ testThreshold = dissolveTokens.symbol "TestThreshold" *> (TestThreshold <$> diss
 
 exchangeable = dissolveTokens.symbol "Exchangeable" *> (Exchangeable <$> dissolveTokens.identifier)
 
+expansionFunction = dissolveTokens.symbol "ExpansionFunction" *> (ExpansionFunction <$> dissolveTokens.identifier)
+
 isotopologue = punt "Isotopologue" Isotopologue
 
 sampledVector = do
@@ -256,24 +318,32 @@ sampledVector = do
   _ <- dissolveTokens.symbol "EndSampledVector"
   pure $ SampledVector name kind third
 
+reference = namedValueContainer "Reference" data1DPart Reference
+
 analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> save <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> exchangeable <|> analyser <|> rawNum
+modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averagingScheme <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> saveRepresentativeGR <|> saveEstimatedPartials <|> saveReference <|> saveSQ <|> save <|> eReq <|> inpAFile <|> nPItSs <|> feedback <|> referenceFTQMin <|> referenceFTQMax <|> referenceNormalisation <|> referenceWindowFunction <|> reference <|> pCofFile <|> onlyWhenEnergyStable <|> normalisation <|> overwritePotentials <|> testAbsEnergyEP <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> expansionFunction <|> exchangeable <|> analyser <|> rawNum <?> "Module Part"
 
-layerPart :: MyParser LayerPart
-layerPart = do
+module_ :: MyParser LayerPart
+module_ = do
   terms <- punt "Module" identity
   contents <- many1Till modulePart $ string "End"
   _ <- dissolveTokens.reserved "Module"
   pure (Module terms $ toUnfoldable contents)
+
+layerFrequency = dissolveTokens.symbol "Frequency" *> (LayerFrequency <$> dissolveTokens.integer)
+
+layerPart = layerFrequency <|> module_
 
 ----------------------------------------------------------------------------
 popOnLayer :: Array LayerPart -> Json -> Json
 popOnLayer xs s = foldl go s xs
   where
   go s (Module terms parts) = updateArray "modules" (\c -> fromArray $ flip snoc (writeModule terms parts) c) s
+
+  go s (LayerFrequency x) = "frequency" := x ~> s
 
 writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
   where
@@ -293,6 +363,8 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
   go s (IntraBroadening x) = "intraBroadening" := x ~> s
 
   go s (Averaging x) = "averaging" := x ~> s
+
+  go s (AveragingScheme x) = "averagingScheme" := x ~> s
 
   go s (Target x) = "target" := x ~> s
 
@@ -363,6 +435,8 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
 
   go s (ErrorType x) = "errorType" := x ~> s
 
+  go s (Normalisation x) = "normalisation" := x ~> s
+
   go s (RangeA low high) = "rangeA" := ("low" := low ~> "high" := high ~> jsonEmptyObject) ~> s
 
   go s (RangeB low high) = "rangeB" := ("low" := low ~> "high" := high ~> jsonEmptyObject) ~> s
@@ -371,7 +445,9 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
 
   go s (Test x) = "test" := x ~> s
 
-  go s (TestAnalytic x) = "test" := x ~> s
+  go s (TestAbsEnergyEP name value) = updateInner "testAbsEnergyEP" (\c -> name := value ~> c) s
+
+  go s (TestAnalytic x) = "testAnalytic" := x ~> s
 
   go s (TestReferenceInter xs) = "testReferenceInter" := xs ~> s
 
@@ -384,7 +460,41 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
 
   go s (Save x) = "save" := x ~> s
 
-  go s (Exchangeable x) = "exchagenable" := x ~> s
+  go s (EReq x) = "eReq" := x ~> s
+
+  go s (InpAFile x) = "inpAFile" := x ~> s
+
+  go s (NPItSs x) = "nPItSs" := x ~> s
+
+  go s (Feedback x) = "feedback" := x ~> s
+
+  go s (Reference name value items) = updateArray "references" (fromArray <<< flip snoc ("name" := name ~> "value" := value ~> jsonEmptyObject)) s
+
+  go s (Exchangeable x) = "exchangeable" := x ~> s
+
+  go s (ExpansionFunction x) = "expansionFunction" := x ~> s
+
+  go s (PCofFile x) = "pCofFile" := x ~> s
+
+  go s (OnlyWhenEnergyStable x) = "onlyWhenEnergyStable" := x ~> s
+
+  go s (ReferenceFTQMin x) = "referenceFTQMin" := x ~> s
+
+  go s (ReferenceFTQMax x) = "referenceFTQMax" := x ~> s
+
+  go s (ReferenceNormalisation x) = "referenceNormalisation" := x ~> s
+
+  go s (ReferenceWindowFunction x) = "referenceWindowFunction" := x ~> s
+
+  go s (SaveRepresentativeGR x) = "saveRepresentativeGR" := x ~> s
+
+  go s (SaveEstimatedPartials x) = "saveEstimatedPartials" := x ~> s
+
+  go s (SaveReference x) = "saveReference" := x ~> s
+
+  go s (SaveSQ x) = "saveSQ" := x ~> s
+
+  go s (OverwritePotentials x) = "overwritePotentials" := x ~> s
 
   go s (RawNum x) = updateArray "rawNumbers" (fromArray <<< flip snoc (encodeJson x)) s
 

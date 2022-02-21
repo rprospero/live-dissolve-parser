@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser.Combinators (sepBy, sepBy1, (<?>))
 import Text.Parsing.Parser.String (char)
-import Util (MyParser, arbitrary, bool, dissolveTokens, namedContainer, punt, signedFloat, updateArray, updateInner)
+import Util (MyParser, arbitrary, bool, dissolveTokens, named, namedContainer, punt, signedFloat, updateArray, updateInner)
 
 data ForceInfo
   = Harmonic Number Number
@@ -32,7 +32,7 @@ instance showForceInfo :: Show ForceInfo where
 
 forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> ljGeometric <|> lj <?> "Force Info"
   where
-  harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> signedFloat <*> signedFloat)
+  harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> named signedFloat <*> named signedFloat)
 
   cos3 = dissolveTokens.symbol "Cos3" *> (Cos3 <$> signedFloat <*> signedFloat <*> signedFloat)
 
@@ -42,7 +42,7 @@ forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> lj
 
   cos = dissolveTokens.symbol "Cos" *> (Cos <$> signedFloat <*> signedFloat <*> signedFloat <*> signedFloat)
 
-  lj = dissolveTokens.symbol "LJ" *> (LJ <$> signedFloat <*> signedFloat)
+  lj = dissolveTokens.symbol "LJ" *> (LJ <$> named signedFloat <*> named signedFloat)
 
   ljGeometric = dissolveTokens.symbol "LJGeometric" *> (LJGeometric <$> signedFloat <*> signedFloat)
 
@@ -58,10 +58,10 @@ writeRef Nothing s = s
 
 writeRef (Just None) s = s
 
-writeRef (Just (Harmonic k x)) s =
+writeRef (Just (Harmonic k eq)) s =
   "type" := "Harmonic"
     ~> "length"
-    := x
+    := eq
     ~> "constant"
     := k
     ~> s

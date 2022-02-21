@@ -68,3 +68,8 @@ main = do
             describe "energyforce4" do
               parseTest "py4oh-ntf2" "energyforce4"
               parseTest "py5-ntf2" "energyforce4"
+            describe "epsr" do
+              parseTest "benzene" "epsr"
+              parseTest "pcof" "epsr"
+              parseTest "water-neutron-xray" "epsr"
+              parseTest "water-poisson" "epsr"

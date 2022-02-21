@@ -17,6 +17,7 @@ import Text.Parsing.Parser.String (noneOf, skipSpaces, char, string)
 data ConfigurationPart
   = Generator (Array GeneratorPart)
   | Temperature Number
+  | SizeFactor Number
   | InputCoordinates String String
 
 derive instance genericConfigurationPart :: Generic ConfigurationPart _
@@ -65,7 +66,7 @@ derive instance genericParam :: Generic Param _
 instance showParam :: Show Param where
   show x = genericShow x
 
-density = dissolveTokens.symbol "Density" *> (Density <$> arbitrary <*> dissolveTokens.symbol "atoms/A3")
+density = dissolveTokens.symbol "Density" *> (Density <$> arbitrary <*> units)
 
 population = dissolveTokens.symbol "Population" *> (Population <$> myInt)
   where
@@ -103,6 +104,8 @@ generator = container "Generator" generatorPart Generator
 
 temperature = dissolveTokens.symbol "Temperature" *> (Temperature <$> dissolveTokens.float)
 
+sizeFactor = dissolveTokens.symbol "SizeFactor" *> (SizeFactor <$> dissolveTokens.float)
+
 inputCoordinates = do
   _ <- dissolveTokens.symbol "InputCoordinates"
   name <- dissolveTokens.identifier
@@ -112,13 +115,15 @@ inputCoordinates = do
   _ <- dissolveTokens.symbol "InputCoordinates"
   pure (InputCoordinates name $ fromCharArray path)
 
-configurationPart = temperature <|> generator <|> inputCoordinates
+configurationPart = temperature <|> generator <|> inputCoordinates <|> sizeFactor
 
 ----------------------------------------------------------------------------
 popOnConfig :: Array ConfigurationPart -> Json -> Json
 popOnConfig xs s = foldl go s xs
   where
   go s (Temperature x) = "temperature" := x ~> s
+
+  go s (SizeFactor x) = "sizeFactor" := x ~> s
 
   go s (InputCoordinates name value) = updateInner "inputCoordinates" (\x -> name := value ~> x) s
 

@@ -165,3 +165,7 @@ updateArray name f s = caseJsonObject s inner s
       ps = maybe jsonEmptyArray identity $ lookup name ob
     in
       name := (caseJsonArray ps f ps) ~> fromObject ob
+
+units = dissolveTokens.symbol "atoms/A3" <|> dissolveTokens.symbol "g/cm3"
+
+named parser = (dissolveTokens.identifier *> dissolveTokens.symbol "=" *> parser) <|> parser

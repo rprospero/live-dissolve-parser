@@ -12,7 +12,7 @@ import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser.Combinators (optionMaybe, (<?>))
 import Text.Parsing.Parser.String (char)
-import Util (MyParser, arbitrary, bool, dissolveTokens, namedContainer, punt, signedFloat, updateArray, updateInner)
+import Util
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
@@ -22,6 +22,7 @@ data SpeciesPart
   | Torsion Int Int Int Int (Maybe ForceInfo)
   | Improper Int Int Int Int (Maybe ForceInfo)
   | Site String (Array SitePart)
+  | Noop
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
 
@@ -40,7 +41,7 @@ instance showSitePart :: Show SitePart where
   show x = genericShow x
 
 atom :: MyParser SpeciesPart
-atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat <*> signedFloat <*> dissolveTokens.stringLiteral <*> optionMaybe signedFloat)
+atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat <*> signedFloat <*> allString <*> optionMaybe signedFloat)
 
 bond :: MyParser SpeciesPart
 bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
@@ -59,6 +60,14 @@ isotopologue = punt "Isotopologue" Isotopologue
 site :: MyParser SpeciesPart
 site = namedContainer "Site" sitePart Site
 
+noop = (nAtoms <|> nBonds <|> nAngles) *> pure Noop
+  where
+  nAtoms = dissolveTokens.symbol "NAtoms" *> dissolveTokens.integer
+
+  nBonds = dissolveTokens.symbol "NBonds" *> dissolveTokens.integer
+
+  nAngles = dissolveTokens.symbol "NAngles" *> dissolveTokens.integer
+
 origin = dissolveTokens.symbol "Origin" *> (Origin <$> many dissolveTokens.integer)
 
 xaxis = dissolveTokens.symbol "XAxis" *> (XAxis <$> many dissolveTokens.integer)
@@ -70,7 +79,7 @@ massWeighted = dissolveTokens.symbol "OriginMassWeighted" *> (OriginMassWeighted
 sitePart = xaxis <|> yaxis <|> massWeighted <|> origin
 
 speciesPart :: MyParser SpeciesPart
-speciesPart = atom <|> bond <|> angle <|> torsion <|> improper <|> isotopologue <|> site <?> "Species Term"
+speciesPart = atom <|> bond <|> angle <|> torsion <|> improper <|> isotopologue <|> site <|> noop <?> "Species Term"
 
 ----------------------------------------------------------------------------
 popOnSpecies :: Array SpeciesPart -> Json -> Json
@@ -89,6 +98,8 @@ popOnSpecies xs s = foldl go s xs
   go s (Isotopologue as) = updateArray "isotopologues" (\c -> fromArray $ cons (encodeJson as) c) s
 
   go s (Site name vs) = updateInner "site" (writeSite name vs) s
+
+  go s (Noop) = s
 
 writeSite name vs s = name := (foldl go jsonEmptyObject vs) ~> s
   where
