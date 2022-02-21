@@ -73,3 +73,5 @@ main = do
               parseTest "pcof" "epsr"
               parseTest "water-neutron-xray" "epsr"
               parseTest "water-poisson" "epsr"
+            describe "exchangeable" do
+              parseTest "watermeth" "exchangeable"

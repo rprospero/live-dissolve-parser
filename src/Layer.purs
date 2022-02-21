@@ -98,7 +98,7 @@ data ModulePart
   | TestReferenceInter (Array String)
   | TestReferenceIntra Number
   | TestThreshold Number
-  | Exchangeable String
+  | Exchangeable (Array String)
   | Reference String String (Array Data1DPart)
   | Analyser (Array AnalyserPart)
   | RawNum Number
@@ -304,7 +304,7 @@ testReferenceIntra = dissolveTokens.symbol "TestReferenceIntra" *> (TestReferenc
 
 testThreshold = dissolveTokens.symbol "TestThreshold" *> (TestThreshold <$> dissolveTokens.float)
 
-exchangeable = dissolveTokens.symbol "Exchangeable" *> (Exchangeable <$> dissolveTokens.identifier)
+exchangeable = punt "Exchangeable" Exchangeable
 
 expansionFunction = dissolveTokens.symbol "ExpansionFunction" *> (ExpansionFunction <$> dissolveTokens.identifier)
 
