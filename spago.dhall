@@ -27,6 +27,7 @@ to generate this file without the comments in this block.
   , "maybe"
   , "node-buffer"
   , "node-fs-aff"
+  , "node-process"
   , "parsing"
   , "prelude"
   , "psci-support"
