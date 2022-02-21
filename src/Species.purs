@@ -16,7 +16,7 @@ import Util (MyParser, arbitrary, bool, dissolveTokens, namedContainer, punt, si
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
-  | Angle (Array String)
+  | Angle Int Int Int (Maybe ForceInfo)
   | Bond Int Int (Maybe ForceInfo)
   | Isotopologue (Array String)
   | Torsion (Array String)
@@ -46,7 +46,7 @@ bond :: MyParser SpeciesPart
 bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
 angle :: MyParser SpeciesPart
-angle = punt "Angle" Angle
+angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
 torsion :: MyParser SpeciesPart
 torsion = punt "Torsion" Torsion
@@ -78,7 +78,7 @@ popOnSpecies xs s = foldl go s xs
   where
   go s (Atom index element x y z cls charge) = updateArray "atoms" (\c -> fromArray $ flip snoc (writeAtom index element x y z cls charge) c) s
 
-  go s (Angle as) = updateArray "angles" (\c -> fromArray $ cons (encodeJson as) c) s
+  go s (Angle i j k ref) = updateArray "angles" (\c -> fromArray $ flip snoc (writeAngle i j k ref) c) s
 
   go s (Bond i j ref) = updateArray "bonds" (\c -> fromArray $ flip snoc (writeBond i j ref) c) s
 
@@ -118,4 +118,13 @@ writeBond i j ref =
     := i
     ~> "j"
     := j
+    ~> writeRef ref jsonEmptyObject
+
+writeAngle i j k ref =
+  "i"
+    := i
+    ~> "j"
+    := j
+    ~> "k"
+    := k
     ~> writeRef ref jsonEmptyObject
