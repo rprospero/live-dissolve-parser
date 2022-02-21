@@ -1,11 +1,11 @@
 module Test.Main where
 
 import Prelude
-import Dissolve (loadDissolveFile)
 import Data.Either (isRight)
+import Dissolve (loadDissolveFile)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Test.Spec (describe, it)
+import Test.Spec (describe, it, pending)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
@@ -75,3 +75,14 @@ main = do
               parseTest "water-poisson" "epsr"
             describe "exchangeable" do
               parseTest "watermeth" "exchangeable"
+            describe "ff" do
+              parseTest "kulmala2010" "ff"
+              parseTest "ludwig-py5" "ff"
+              parseTest "oplsaa2005-alcohols" "ff"
+              parseTest "oplsaa2005-alkanes" "ff"
+              parseTest "oplsaa2005-aromatics" "ff"
+              parseTest "pcl2019-anions" "ff"
+              parseTest "pcl2019-cations" "ff"
+              parseTest "spcfw" "ff"
+              parseTest "uff-nmethylformamide" "ff"
+              pending "uff4mof-mof5" -- Works, but uses too much memory

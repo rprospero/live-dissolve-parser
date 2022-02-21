@@ -17,11 +17,13 @@ import Util
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
   | Angle Int Int Int (Maybe ForceInfo)
+  | BondType Int Int String
   | Bond Int Int (Maybe ForceInfo)
   | Isotopologue (Array String)
   | Torsion Int Int Int Int (Maybe ForceInfo)
   | Improper Int Int Int Int (Maybe ForceInfo)
   | Site String (Array SitePart)
+  | Forcefield String
   | Noop
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
@@ -46,6 +48,8 @@ atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> diss
 bond :: MyParser SpeciesPart
 bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
+bondType = dissolveTokens.symbol "BondType" *> (BondType <$> dissolveTokens.integer <*> dissolveTokens.integer <*> allString)
+
 angle :: MyParser SpeciesPart
 angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
@@ -59,6 +63,8 @@ isotopologue = punt "Isotopologue" Isotopologue
 
 site :: MyParser SpeciesPart
 site = namedContainer "Site" sitePart Site
+
+forcefield = dissolveTokens.symbol "Forcefield" *> (Forcefield <$> allString)
 
 noop = (nAtoms <|> nBonds <|> nAngles) *> pure Noop
   where
@@ -79,7 +85,7 @@ massWeighted = dissolveTokens.symbol "OriginMassWeighted" *> (OriginMassWeighted
 sitePart = xaxis <|> yaxis <|> massWeighted <|> origin
 
 speciesPart :: MyParser SpeciesPart
-speciesPart = atom <|> bond <|> angle <|> torsion <|> improper <|> isotopologue <|> site <|> noop <?> "Species Term"
+speciesPart = atom <|> bondType <|> bond <|> angle <|> torsion <|> improper <|> isotopologue <|> site <|> forcefield <|> noop <?> "Species Term"
 
 ----------------------------------------------------------------------------
 popOnSpecies :: Array SpeciesPart -> Json -> Json
@@ -91,6 +97,8 @@ popOnSpecies xs s = foldl go s xs
 
   go s (Bond i j ref) = updateArray "bonds" (\c -> fromArray $ flip snoc (writeBond i j ref) c) s
 
+  go s (BondType i j name) = updateArray "bondTypes" (\c -> fromArray $ flip snoc (writeBondType i j name) c) s
+
   go s (Torsion i j k l ref) = updateArray "torsions" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
 
   go s (Improper i j k l ref) = updateArray "impropers" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
@@ -98,6 +106,8 @@ popOnSpecies xs s = foldl go s xs
   go s (Isotopologue as) = updateArray "isotopologues" (\c -> fromArray $ cons (encodeJson as) c) s
 
   go s (Site name vs) = updateInner "site" (writeSite name vs) s
+
+  go s (Forcefield name) = "forcefield" := name ~> s
 
   go s (Noop) = s
 
@@ -130,6 +140,14 @@ writeBond i j ref =
     ~> "i"
     := i
     ~> writeRef ref jsonEmptyObject
+
+writeBondType i j name =
+  "type" := name
+    ~> "j"
+    := j
+    ~> "i"
+    := i
+    ~> jsonEmptyObject
 
 writeAngle i j k ref =
   "k"

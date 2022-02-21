@@ -31,7 +31,6 @@ data ModulePart
   = Configuration String
   | Frequency Int
   | Distance Int Int Number
-  | Angle Int Int Int Number
   | Format String String
   | BinWidth Number
   | IntraBroadening String
@@ -98,6 +97,13 @@ data ModulePart
   | TestReferenceInter (Array String)
   | TestReferenceIntra Number
   | TestThreshold Number
+  | Species String
+  | AtomType Int String
+  | TotalCharge Number
+  | Bond Int Int Number Number
+  | Angle Int Int Int (Array Number)
+  | Torsion Int Int Int Int (Array Number)
+  | Improper Int Int Int Int (Array Number)
   | Exchangeable (Array String)
   | Reference String String (Array Data1DPart)
   | Analyser (Array AnalyserPart)
@@ -125,9 +131,6 @@ frequency = dissolveTokens.symbol "Frequency" *> (Frequency <$> dissolveTokens.i
 
 distance :: MyParser ModulePart
 distance = dissolveTokens.symbol "Distance" *> (Distance <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.float)
-
-angle :: MyParser ModulePart
-angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.float)
 
 format :: MyParser ModulePart
 format = do
@@ -304,6 +307,20 @@ testReferenceIntra = dissolveTokens.symbol "TestReferenceIntra" *> (TestReferenc
 
 testThreshold = dissolveTokens.symbol "TestThreshold" *> (TestThreshold <$> dissolveTokens.float)
 
+species = dissolveTokens.symbol "Species" *> (Species <$> allString)
+
+atomType = dissolveTokens.symbol "AtomType" *> (AtomType <$> dissolveTokens.integer <*> allString)
+
+totalCharge = dissolveTokens.symbol "TotalCharge" *> (TotalCharge <$> signedNum)
+
+bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> signedNum <*> signedNum)
+
+angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> many signedNum)
+
+torsion = dissolveTokens.symbol "Torsion" *> (Torsion <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> many signedNum)
+
+improper = dissolveTokens.symbol "Improper" *> (Improper <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> many signedNum)
+
 exchangeable = punt "Exchangeable" Exchangeable
 
 expansionFunction = dissolveTokens.symbol "ExpansionFunction" *> (ExpansionFunction <$> dissolveTokens.identifier)
@@ -324,7 +341,7 @@ analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = data1D <|> distanceRange <|> angleRange <|> configuration <|> frequency <|> distance <|> angle <|> format <|> binWidth <|> intraBroadening <|> averagingScheme <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> saveRepresentativeGR <|> saveEstimatedPartials <|> saveReference <|> saveSQ <|> save <|> eReq <|> inpAFile <|> nPItSs <|> feedback <|> referenceFTQMin <|> referenceFTQMax <|> referenceNormalisation <|> referenceWindowFunction <|> reference <|> pCofFile <|> onlyWhenEnergyStable <|> normalisation <|> overwritePotentials <|> testAbsEnergyEP <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> expansionFunction <|> exchangeable <|> analyser <|> rawNum <?> "Module Part"
+modulePart = species <|> atomType <|> totalCharge <|> bond <|> angleRange <|> angle <|> torsion <|> improper <|> data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> format <|> binWidth <|> intraBroadening <|> averagingScheme <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> saveRepresentativeGR <|> saveEstimatedPartials <|> saveReference <|> saveSQ <|> save <|> eReq <|> inpAFile <|> nPItSs <|> feedback <|> referenceFTQMin <|> referenceFTQMax <|> referenceNormalisation <|> referenceWindowFunction <|> reference <|> pCofFile <|> onlyWhenEnergyStable <|> normalisation <|> overwritePotentials <|> testAbsEnergyEP <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> expansionFunction <|> exchangeable <|> analyser <|> rawNum <?> "Module Part"
 
 module_ :: MyParser LayerPart
 module_ = do
@@ -353,8 +370,6 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
   go s (Frequency x) = "frequency" := x ~> s
 
   go s (Distance i j dist) = "distance" := ("i" := i ~> "j" := j ~> "measure" := dist ~> jsonEmptyObject) ~> s
-
-  go s (Angle i j k dist) = "angle" := ("i" := i ~> "j" := j ~> "k" := k ~> "measure" := dist ~> jsonEmptyObject) ~> s
 
   go s (Format typ file) = "format" := ("type" := typ ~> "file" := file ~> jsonEmptyObject) ~> s
 
@@ -493,6 +508,20 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
   go s (SaveReference x) = "saveReference" := x ~> s
 
   go s (SaveSQ x) = "saveSQ" := x ~> s
+
+  go s (Species x) = "species" := x ~> s
+
+  go s (AtomType idx name) = updateArray "atomTypes" (fromArray <<< flip snoc ("type" := name ~> "index" := idx ~> jsonEmptyObject)) s
+
+  go s (TotalCharge x) = "totalCharge" := x ~> s
+
+  go s (Bond i j const eq) = updateArray "bonds" (fromArray <<< flip snoc ("eq" := eq ~> "const" := const ~> "j" := j ~> "i" := i ~> jsonEmptyObject)) s
+
+  go s (Angle i j k terms) = updateArray "angles" (fromArray <<< flip snoc ("terms" := terms ~> "k" := k ~> "j" := j ~> "i" := i ~> jsonEmptyObject)) s
+
+  go s (Torsion i j k l terms) = updateArray "torsions" (fromArray <<< flip snoc ("terms" := terms ~> "l" := l ~> "k" := k ~> "j" := j ~> "i" := i ~> jsonEmptyObject)) s
+
+  go s (Improper i j k l terms) = updateArray "impropers" (fromArray <<< flip snoc ("terms" := terms ~> "l" := l ~> "k" := k ~> "j" := j ~> "i" := i ~> jsonEmptyObject)) s
 
   go s (OverwritePotentials x) = "overwritePotentials" := x ~> s
 
