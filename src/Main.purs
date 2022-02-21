@@ -11,6 +11,7 @@ import Effect (Effect)
 import Effect.Aff (runAff)
 import Effect.Class.Console (log)
 import Node.Process (argv)
+import Xml
 
 main :: Effect Unit
 main = do
@@ -21,5 +22,6 @@ main = do
       -- input ← loadDissolveFile "examples/accumulate/accumulate.txt"
       case input of
         Left x -> log $ show x
-        Right x -> log $ stringify $ encodeJson $ asDissolve x
+        -- Right x -> log $ stringify $ encodeJson $ asDissolve x
+        Right x -> log $ show $ toXml $ asDissolve x
   pure unit

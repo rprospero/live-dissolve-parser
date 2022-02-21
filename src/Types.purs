@@ -15,6 +15,7 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
 import Layer
+import Xml
 
 data Section
   = Species String (Array SpeciesPart)
@@ -41,6 +42,11 @@ instance encodeDissolve :: EncodeJson Dissolve where
           _ <- modify (writePair pair)
           _ <- modify (writeMaster master)
           pure 7
+
+instance toXmlDissolve :: ToXml Dissolve where
+  toXml (Dissolve master config layer pair species) =
+    flip execState (xmlEmptyNode "Dissolve") $ do
+      modify ("foo" ::= "bar")
 
 writeLayer :: (Array (Tuple String (Array LayerPart))) -> Json -> Json
 writeLayer xs s = "layer" := foldl go jsonEmptyObject xs ~> s
