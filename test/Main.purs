@@ -101,3 +101,5 @@ main = do
               parseTest "benzene" "restart"
               parseTest "benzene2" "restart"
               parseTest "rdf" "restart"
+            describe "xray" do
+              parseTest "water" "xray"
