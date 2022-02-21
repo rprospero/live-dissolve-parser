@@ -16,7 +16,7 @@ import Util (arbitrary, dissolveTokens, punt, signedFloat, updateArray)
 data MasterPart
   = Angle String (Maybe ForceInfo)
   | Bond String (Maybe ForceInfo)
-  | Torsion (Array String)
+  | Torsion String (Maybe ForceInfo)
   | Improper (Array String)
 
 derive instance genericMasterPart :: Generic MasterPart _
@@ -28,7 +28,7 @@ angle = (dissolveTokens.symbol) "Angle" *> (Angle <$> (arbitrary <* dissolveToke
 
 bond = (dissolveTokens.symbol) "Bond" *> (Bond <$> (arbitrary <* dissolveTokens.whiteSpace) <*> optionMaybe forceInfo)
 
-torsion = punt "Torsion" Torsion
+torsion = (dissolveTokens.symbol) "Torsion" *> (Torsion <$> (arbitrary <* dissolveTokens.whiteSpace) <*> optionMaybe forceInfo)
 
 improper = punt "Improper" Improper
 
@@ -38,10 +38,12 @@ masterPart = angle <|> bond <|> torsion <|> improper
 popOnMaster :: Array MasterPart -> Json -> Json
 popOnMaster xs s = foldl go s xs
   where
-  go s (Bond name ref) = updateArray "bonds" (\c -> fromArray c) s
+  go s (Bond name ref) = updateArray "bonds" (\c -> fromArray $ flip snoc (writeMaster name ref) c) s
 
-  go s (Angle name ref) = updateArray "angles" (\c -> fromArray c) s
+  go s (Angle name ref) = updateArray "angles" (\c -> fromArray $ flip snoc (writeMaster name ref) c) s
 
-  go s (Torsion ts) = updateArray "torsions" (\c -> fromArray c) s
+  go s (Torsion name ref) = updateArray "torsions" (\c -> fromArray $ flip snoc (writeMaster name ref) c) s
 
   go s (Improper xs) = updateArray "improper" (\c -> fromArray c) s
+
+writeMaster name ref = "name" := name ~> writeRef ref jsonEmptyObject

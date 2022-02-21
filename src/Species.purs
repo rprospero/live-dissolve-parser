@@ -19,7 +19,7 @@ data SpeciesPart
   | Angle Int Int Int (Maybe ForceInfo)
   | Bond Int Int (Maybe ForceInfo)
   | Isotopologue (Array String)
-  | Torsion (Array String)
+  | Torsion Int Int Int Int (Maybe ForceInfo)
   | Improper (Array String)
   | Site String (Array SitePart)
 
@@ -49,7 +49,7 @@ angle :: MyParser SpeciesPart
 angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
 torsion :: MyParser SpeciesPart
-torsion = punt "Torsion" Torsion
+torsion = dissolveTokens.symbol "Torsion" *> (Torsion <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
 improper = punt "Improper" Improper
 
@@ -82,7 +82,7 @@ popOnSpecies xs s = foldl go s xs
 
   go s (Bond i j ref) = updateArray "bonds" (\c -> fromArray $ flip snoc (writeBond i j ref) c) s
 
-  go s (Torsion as) = updateArray "torsions" (\c -> fromArray $ cons (encodeJson as) c) s
+  go s (Torsion i j k l ref) = updateArray "torsions" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
 
   go s (Improper as) = updateArray "impropers" (\c -> fromArray $ cons (encodeJson as) c) s
 
@@ -127,4 +127,15 @@ writeAngle i j k ref =
     := j
     ~> "k"
     := k
+    ~> writeRef ref jsonEmptyObject
+
+writeTorsion i j k l ref =
+  "i"
+    := i
+    ~> "j"
+    := j
+    ~> "k"
+    := k
+    ~> "l"
+    := l
     ~> writeRef ref jsonEmptyObject
