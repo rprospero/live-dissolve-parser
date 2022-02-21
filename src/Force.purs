@@ -21,6 +21,7 @@ data ForceInfo
   | Cos Number Number Number Number
   | CosN (Array Number)
   | CosNC (Array Number)
+  | LJ Number Number
   | None
 
 derive instance genericForceInfo :: Generic ForceInfo _
@@ -28,7 +29,7 @@ derive instance genericForceInfo :: Generic ForceInfo _
 instance showForceInfo :: Show ForceInfo where
   show x = genericShow x
 
-forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <?> "Force Info"
+forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> lj <?> "Force Info"
   where
   harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> signedFloat <*> signedFloat)
 
@@ -39,6 +40,8 @@ forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <?> "F
   cosN = dissolveTokens.symbol "CosN" *> ((CosN <<< toUnfoldable) <$> (sepBy1 signedFloat dissolveTokens.whiteSpace))
 
   cos = dissolveTokens.symbol "Cos" *> (Cos <$> signedFloat <*> signedFloat <*> signedFloat <*> signedFloat)
+
+  lj = dissolveTokens.symbol "LJ" *> (LJ <$> signedFloat <*> signedFloat)
 
   none = dissolveTokens.symbol "None" *> pure None
 
@@ -82,6 +85,14 @@ writeRef (Just (CosN xs)) s =
   "type" := "CosN"
     ~> "terms"
     := xs
+    ~> s
+
+writeRef (Just (LJ a b)) s =
+  "type" := "LJ"
+    ~> "a"
+    := a
+    ~> "b"
+    := b
     ~> s
 
 writeRef (Just (Cos3 i j k)) s =

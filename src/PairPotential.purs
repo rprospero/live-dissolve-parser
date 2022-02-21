@@ -2,6 +2,7 @@ module PairPotential where
 
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
+import Force
 import Foreign.Object
 import Prelude
 import Util
@@ -16,7 +17,7 @@ data PairPart
   | Delta Number
   | ShortRangeTruncation String
   | IncludeCoulomb Boolean
-  | Parameters (Array String)
+  | Parameters String String Number ForceInfo
   | ManualChargeSource Boolean
   | ForceChargeSource Boolean
   | CoulombTruncation String
@@ -40,7 +41,7 @@ forceChargeSource = dissolveTokens.symbol "ForceChargeSource" *> (ForceChargeSou
 
 coulombTruncation = dissolveTokens.symbol "CoulombTruncation" *> (CoulombTruncation <$> dissolveTokens.identifier)
 
-parameters = punt "Parameters" Parameters
+parameters = dissolveTokens.symbol "Parameters" *> (Parameters <$> allString <*> dissolveTokens.identifier <*> signedFloat <*> forceInfo)
 
 pairPart = range <|> delta <|> short <|> coulomb <|> parameters <|> manualChargeSource <|> forceChargeSource <|> coulombTruncation
 
@@ -62,6 +63,6 @@ popOnPair xs s = foldl go s xs
 
   go s (ForceChargeSource x) = "forceChargeSource" := x ~> s
 
-  go s (Parameters xs) = updateInner "parameters" (\c -> name := tail xs ~> c) s
+  go s (Parameters name elem charge ref) = updateInner "parameters" (\c -> name := value ~> c) s
     where
-    name = maybe "unnamed" identity $ head xs
+    value = "element" := elem ~> "charge" := charge ~> writeRef (pure ref) jsonEmptyObject

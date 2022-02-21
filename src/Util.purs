@@ -136,6 +136,9 @@ arbitrary = do
   _ <- many (satisfy (\c -> (c == ' ') || (c == '\t')))
   pure text
 
+allString :: MyParser String
+allString = dissolveTokens.stringLiteral <|> (arbitrary <* dissolveTokens.whiteSpace)
+
 punt :: forall a. String -> (Array String -> a) -> MyParser a
 punt kind constructor = do
   _ <- dissolveTokens.symbol kind
