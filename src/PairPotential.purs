@@ -27,7 +27,7 @@ derive instance genericPairPart :: Generic PairPart _
 instance showPairPart :: Show PairPart where
   show x = genericShow x
 
-range = dissolveTokens.symbol "Range" *> (Range <$> dissolveTokens.float)
+range = dissolveTokens.symbol "Range" *> (Range <$> signedNum)
 
 delta = dissolveTokens.symbol "Delta" *> (Delta <$> dissolveTokens.float)
 

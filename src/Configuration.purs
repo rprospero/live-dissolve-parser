@@ -103,9 +103,9 @@ generatorPart = add <|> box <|> parameters
 
 generator = container "Generator" generatorPart Generator
 
-temperature = dissolveTokens.symbol "Temperature" *> (Temperature <$> dissolveTokens.float)
+temperature = dissolveTokens.symbol "Temperature" *> (Temperature <$> signedNum)
 
-sizeFactor = dissolveTokens.symbol "SizeFactor" *> (SizeFactor <$> dissolveTokens.float)
+sizeFactor = dissolveTokens.symbol "SizeFactor" *> (SizeFactor <$> signedNum)
 
 cellDivisionLength = dissolveTokens.symbol "CellDivisionLength" *> (CellDivisionLength <$> dissolveTokens.float)
 

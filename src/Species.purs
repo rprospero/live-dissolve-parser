@@ -66,13 +66,15 @@ site = namedContainer "Site" sitePart Site
 
 forcefield = dissolveTokens.symbol "Forcefield" *> (Forcefield <$> allString)
 
-noop = (nAtoms <|> nBonds <|> nAngles) *> pure Noop
+noop = (nAtoms <|> nBonds <|> nAngles <|> nTorsions) *> pure Noop
   where
   nAtoms = dissolveTokens.symbol "NAtoms" *> dissolveTokens.integer
 
   nBonds = dissolveTokens.symbol "NBonds" *> dissolveTokens.integer
 
   nAngles = dissolveTokens.symbol "NAngles" *> dissolveTokens.integer
+
+  nTorsions = dissolveTokens.symbol "NTorsions" *> dissolveTokens.integer
 
 origin = dissolveTokens.symbol "Origin" *> (Origin <$> many dissolveTokens.integer)
 

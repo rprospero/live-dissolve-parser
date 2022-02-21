@@ -40,6 +40,8 @@ data ModulePart
   | Data String
   | SiteA String String (Maybe (Tuple String String))
   | SiteB String String (Maybe (Tuple String String))
+  | AxisA String
+  | AxisB String
   | Site (Array String)
   | DistanceRange Number Number Number
   | AngleRange Number Number Number
@@ -106,6 +108,8 @@ data ModulePart
   | Improper Int Int Int Int (Array Number)
   | NSteps Int
   | InternalTest Boolean
+  | RotationStepSize Number
+  | TranslationStepSize Number
   | Exchangeable (Array String)
   | Reference String String (Array Data1DPart)
   | Analyser (Array AnalyserPart)
@@ -163,20 +167,24 @@ data_ = dissolveTokens.symbol "Data" *> (Data <$> dissolveTokens.stringLiteral)
 siteA :: MyParser ModulePart
 siteA = do
   _ <- dissolveTokens.symbol "SiteA"
-  x <- dissolveTokens.identifier
-  y <- dissolveTokens.stringLiteral
+  x <- allString
+  y <- allString
   second <- optionMaybe (Tuple <$> dissolveTokens.symbol x <*> dissolveTokens.stringLiteral)
   pure $ SiteA x y second
 
 siteB :: MyParser ModulePart
 siteB = do
   _ <- dissolveTokens.symbol "SiteB"
-  x <- dissolveTokens.identifier
-  y <- dissolveTokens.stringLiteral
+  x <- allString
+  y <- allString
   second <- optionMaybe (Tuple <$> dissolveTokens.symbol x <*> dissolveTokens.stringLiteral)
   pure $ SiteB x y second
 
 site = punt "Site" Site
+
+axisA = dissolveTokens.symbol "AxisA" *> (AxisA <$> allString)
+
+axisB = dissolveTokens.symbol "AxisB" *> (AxisB <$> allString)
 
 distanceRange :: MyParser ModulePart
 distanceRange = dissolveTokens.symbol "DistanceRange" *> (DistanceRange <$> dissolveTokens.float <*> dissolveTokens.float <*> dissolveTokens.float)
@@ -223,7 +231,7 @@ includeBragg :: MyParser ModulePart
 includeBragg = dissolveTokens.symbol "IncludeBragg" *> (IncludeBragg <$> dissolveTokens.stringLiteral)
 
 braggQBroadening :: MyParser ModulePart
-braggQBroadening = dissolveTokens.symbol "BraggQBroadening" *> (BraggQBroadening <$> allString <*> signedFloat <*> signedFloat)
+braggQBroadening = dissolveTokens.symbol "BraggQBroadening" *> (BraggQBroadening <$> allString <*> signedNum <*> signedNum)
 
 testReflections = dissolveTokens.symbol "TestReflections" *> (TestReflections <$> dissolveTokens.stringLiteral)
 
@@ -275,9 +283,9 @@ feedback = dissolveTokens.symbol "Feedback" *> (Feedback <$> signedFloat)
 
 pCofFile = dissolveTokens.symbol "PCofFile" *> (PCofFile <$> dissolveTokens.stringLiteral)
 
-referenceFTQMin = dissolveTokens.symbol "ReferenceFTQMin" *> (ReferenceFTQMin <$> signedFloat)
+referenceFTQMin = dissolveTokens.symbol "ReferenceFTQMin" *> (ReferenceFTQMin <$> signedNum)
 
-referenceFTQMax = dissolveTokens.symbol "ReferenceFTQMax" *> (ReferenceFTQMax <$> signedFloat)
+referenceFTQMax = dissolveTokens.symbol "ReferenceFTQMax" *> (ReferenceFTQMax <$> signedNum)
 
 referenceNormalisation = dissolveTokens.symbol "ReferenceNormalisation" *> (ReferenceNormalisation <$> allString)
 
@@ -327,6 +335,10 @@ nSteps = dissolveTokens.symbol "NSteps" *> (NSteps <$> dissolveTokens.integer)
 
 internalTest = dissolveTokens.symbol "InternalTest" *> (InternalTest <$> bool)
 
+rotationStepSize = dissolveTokens.symbol "RotationStepSize" *> (RotationStepSize <$> signedNum)
+
+translationStepSize = dissolveTokens.symbol "TranslationStepSize" *> (TranslationStepSize <$> signedNum)
+
 exchangeable = punt "Exchangeable" Exchangeable
 
 expansionFunction = dissolveTokens.symbol "ExpansionFunction" *> (ExpansionFunction <$> dissolveTokens.identifier)
@@ -347,7 +359,7 @@ analyser = container "Analyser" analyserPart Analyser
 
 rawNum = RawNum <$> signedNum
 
-modulePart = species <|> atomType <|> totalCharge <|> bond <|> angleRange <|> angle <|> torsion <|> improper <|> data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> format <|> binWidth <|> intraBroadening <|> averagingScheme <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> saveRepresentativeGR <|> saveEstimatedPartials <|> saveReference <|> saveSQ <|> save <|> eReq <|> inpAFile <|> nPItSs <|> feedback <|> referenceFTQMin <|> referenceFTQMax <|> referenceNormalisation <|> referenceWindowFunction <|> reference <|> pCofFile <|> onlyWhenEnergyStable <|> normalisation <|> overwritePotentials <|> testAbsEnergyEP <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> expansionFunction <|> nSteps <|> internalTest <|> exchangeable <|> analyser <|> rawNum <?> "Module Part"
+modulePart = species <|> atomType <|> totalCharge <|> bond <|> angleRange <|> angle <|> torsion <|> improper <|> data1D <|> distanceRange <|> configuration <|> frequency <|> distance <|> format <|> binWidth <|> intraBroadening <|> averagingScheme <|> averaging <|> target <|> data_ <|> siteA <|> siteB <|> axisA <|> axisB <|> excludeSameMolecule <|> internalData1D <|> rangeBEnabled <|> rangeA <|> rangeB <|> rangeX <|> rangeY <|> rangeZ <|> range <|> multiplicity <|> qDelta <|> qMin <|> qMax <|> qBroadening <|> testReflections <|> method <|> sourceRDFs <|> sourceRDF <|> windowFunction <|> includeBragg <|> braggQBroadening <|> sampledDouble <|> sourceSQs <|> threshold <|> isotopologue <|> site <|> sampledVector <|> errorType <|> export <|> saveRepresentativeGR <|> saveEstimatedPartials <|> saveReference <|> saveSQ <|> save <|> eReq <|> inpAFile <|> nPItSs <|> feedback <|> referenceFTQMin <|> referenceFTQMax <|> referenceNormalisation <|> referenceWindowFunction <|> reference <|> pCofFile <|> onlyWhenEnergyStable <|> normalisation <|> overwritePotentials <|> testAbsEnergyEP <|> testAnalytic <|> testReferenceInter <|> testReferenceIntra <|> testThreshold <|> testReference <|> test <|> expansionFunction <|> nSteps <|> internalTest <|> rotationStepSize <|> translationStepSize <|> exchangeable <|> analyser <|> rawNum <?> "Module Part"
 
 module_ :: MyParser LayerPart
 module_ = do
@@ -396,6 +408,10 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
   go s (SiteA name site (Just (Tuple name2 site2))) = "siteA" := ("species" := name ~> "site" := site ~> "species2" := name2 ~> "site2" := site2 ~> jsonEmptyObject) ~> s
 
   go s (SiteB name site Nothing) = "siteB" := ("species" := name ~> "site" := site ~> jsonEmptyObject) ~> s
+
+  go s (AxisA x) = "axisA" := x ~> s
+
+  go s (AxisB x) = "axisB" := x ~> s
 
   go s (SiteB name site (Just (Tuple name2 site2))) = "siteB" := ("species" := name ~> "site" := site ~> "species2" := name2 ~> "site2" := site2 ~> jsonEmptyObject) ~> s
 
@@ -524,6 +540,10 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
   go s (NSteps x) = "nSteps" := x ~> s
 
   go s (InternalTest x) = "internalTest" := x ~> s
+
+  go s (RotationStepSize x) = "rotationStepSize" := x ~> s
+
+  go s (TranslationStepSize x) = "translationStepSize" := x ~> s
 
   go s (Bond i j const eq) = updateArray "bonds" (fromArray <<< flip snoc ("eq" := eq ~> "const" := const ~> "j" := j ~> "i" := i ~> jsonEmptyObject)) s
 

@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser.Combinators (sepBy, sepBy1, (<?>))
 import Text.Parsing.Parser.String (char)
-import Util (MyParser, arbitrary, bool, dissolveTokens, named, namedContainer, punt, signedFloat, updateArray, updateInner)
+import Util (MyParser, arbitrary, bool, dissolveTokens, named, namedContainer, punt, signedFloat, signedNum, updateArray, updateInner)
 
 data ForceInfo
   = Harmonic Number Number
@@ -22,7 +22,7 @@ data ForceInfo
   | CosN (Array Number)
   | CosNC (Array Number)
   | LJ Number Number
-  | LJGeometric Number Number
+  | LJGeometric (Array Number)
   | None
 
 derive instance genericForceInfo :: Generic ForceInfo _
@@ -32,9 +32,9 @@ instance showForceInfo :: Show ForceInfo where
 
 forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> ljGeometric <|> lj <?> "Force Info"
   where
-  harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> named signedFloat <*> named signedFloat)
+  harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> named signedNum <*> named signedNum)
 
-  cos3 = dissolveTokens.symbol "Cos3" *> (Cos3 <$> signedFloat <*> signedFloat <*> signedFloat)
+  cos3 = dissolveTokens.symbol "Cos3" *> (Cos3 <$> named signedNum <*> named signedNum <*> named signedNum)
 
   cosNC = dissolveTokens.symbol "CosNC" *> ((CosNC <<< toUnfoldable) <$> (sepBy1 signedFloat dissolveTokens.whiteSpace))
 
@@ -44,7 +44,7 @@ forceInfo = harmonic <|> ref <|> none <|> cos3 <|> cosNC <|> cosN <|> cos <|> lj
 
   lj = dissolveTokens.symbol "LJ" *> (LJ <$> named signedFloat <*> named signedFloat)
 
-  ljGeometric = dissolveTokens.symbol "LJGeometric" *> (LJGeometric <$> signedFloat <*> signedFloat)
+  ljGeometric = dissolveTokens.symbol "LJGeometric" *> ((LJGeometric <<< toUnfoldable) <$> (sepBy1 signedNum dissolveTokens.whiteSpace))
 
   none = dissolveTokens.symbol "None" *> pure None
 
@@ -98,12 +98,10 @@ writeRef (Just (LJ a b)) s =
     := b
     ~> s
 
-writeRef (Just (LJGeometric a b)) s =
+writeRef (Just (LJGeometric terms)) s =
   "type" := "LJGeometric"
-    ~> "a"
-    := a
-    ~> "b"
-    := b
+    ~> "terms"
+    := terms
     ~> s
 
 writeRef (Just (Cos3 i j k)) s =

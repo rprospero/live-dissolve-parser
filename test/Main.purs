@@ -97,3 +97,7 @@ main = do
             describe "rdfmethod" do
               parseTest "cells" "rdfmethod"
               parseTest "simple" "rdfmethod"
+            describe "restart" do
+              parseTest "benzene" "restart"
+              parseTest "benzene2" "restart"
+              parseTest "rdf" "restart"
