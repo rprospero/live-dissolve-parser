@@ -92,3 +92,5 @@ main = do
               parseTest "water" "inputs"
             describe "md" do
               parseTest "benzene" "md"
+            describe "molshake" do
+              parseTest "benzene" "molshake"
