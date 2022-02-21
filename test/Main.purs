@@ -90,3 +90,5 @@ main = do
               parseTest "benzene" "inputs"
               parseTest "py5-ntf2" "inputs"
               parseTest "water" "inputs"
+            describe "md" do
+              parseTest "benzene" "md"
