@@ -2,14 +2,14 @@ module Species where
 
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
+import Force
 import Foreign.Object
 import Prelude
-import Force
 import Control.Alternative ((<|>))
 import Data.Array (cons, foldl, many, snoc)
 import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe)
+import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser.Combinators (optionMaybe, (<?>))
 import Text.Parsing.Parser.String (char)
 import Util (MyParser, arbitrary, bool, dissolveTokens, namedContainer, punt, signedFloat, updateArray, updateInner)
@@ -20,7 +20,7 @@ data SpeciesPart
   | Bond Int Int (Maybe ForceInfo)
   | Isotopologue (Array String)
   | Torsion Int Int Int Int (Maybe ForceInfo)
-  | Improper (Array String)
+  | Improper Int Int Int Int (Maybe ForceInfo)
   | Site String (Array SitePart)
 
 derive instance genericSpeciesPart :: Generic SpeciesPart _
@@ -51,7 +51,7 @@ angle = dissolveTokens.symbol "Angle" *> (Angle <$> dissolveTokens.integer <*> d
 torsion :: MyParser SpeciesPart
 torsion = dissolveTokens.symbol "Torsion" *> (Torsion <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
-improper = punt "Improper" Improper
+improper = dissolveTokens.symbol "Improper" *> (Improper <$> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
 isotopologue :: MyParser SpeciesPart
 isotopologue = punt "Isotopologue" Isotopologue
@@ -84,7 +84,7 @@ popOnSpecies xs s = foldl go s xs
 
   go s (Torsion i j k l ref) = updateArray "torsions" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
 
-  go s (Improper as) = updateArray "impropers" (\c -> fromArray $ cons (encodeJson as) c) s
+  go s (Improper i j k l ref) = updateArray "impropers" (\c -> fromArray $ flip snoc (writeTorsion i j k l ref) c) s
 
   go s (Isotopologue as) = updateArray "isotopologues" (\c -> fromArray $ cons (encodeJson as) c) s
 

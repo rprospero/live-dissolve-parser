@@ -17,7 +17,7 @@ data MasterPart
   = Angle String (Maybe ForceInfo)
   | Bond String (Maybe ForceInfo)
   | Torsion String (Maybe ForceInfo)
-  | Improper (Array String)
+  | Improper String (Maybe ForceInfo)
 
 derive instance genericMasterPart :: Generic MasterPart _
 
@@ -30,7 +30,7 @@ bond = (dissolveTokens.symbol) "Bond" *> (Bond <$> (arbitrary <* dissolveTokens.
 
 torsion = (dissolveTokens.symbol) "Torsion" *> (Torsion <$> (arbitrary <* dissolveTokens.whiteSpace) <*> optionMaybe forceInfo)
 
-improper = punt "Improper" Improper
+improper = (dissolveTokens.symbol) "Improper" *> (Improper <$> (arbitrary <* dissolveTokens.whiteSpace) <*> optionMaybe forceInfo)
 
 masterPart = angle <|> bond <|> torsion <|> improper
 
@@ -44,6 +44,6 @@ popOnMaster xs s = foldl go s xs
 
   go s (Torsion name ref) = updateArray "torsions" (\c -> fromArray $ flip snoc (writeMaster name ref) c) s
 
-  go s (Improper xs) = updateArray "improper" (\c -> fromArray c) s
+  go s (Improper name ref) = updateArray "improper" (\c -> fromArray $ flip snoc (writeMaster name ref) c) s
 
 writeMaster name ref = "name" := name ~> writeRef ref jsonEmptyObject
