@@ -90,9 +90,9 @@ signedNum = eitherFix toNumber <$> (negativeFloat <|> dissolveTokens.naturalOrFl
 bool :: MyParser Boolean
 bool = t <|> f <?> "Boolean"
   where
-  t = (dissolveTokens.symbol "True" <|> dissolveTokens.symbol "On") *> pure true
+  t = (dissolveTokens.symbol "True" <|> dissolveTokens.symbol "On" <|> dissolveTokens.symbol "on") *> pure true
 
-  f = (dissolveTokens.symbol "False" <|> dissolveTokens.symbol "Off") *> pure false
+  f = (dissolveTokens.symbol "False" <|> dissolveTokens.symbol "Off" <|> dissolveTokens.symbol "off") *> pure false
 
 container :: forall a x. String -> MyParser x -> (Array x -> a) -> MyParser a
 container name content constructor = do
