@@ -54,22 +54,22 @@ writeRef (Just None) s = s
 
 writeRef (Just (Harmonic k x)) s =
   "type" := "Harmonic"
-    ~> "constant"
-    := k
     ~> "length"
     := x
+    ~> "constant"
+    := k
     ~> s
 
 writeRef (Just (Cos i j k l)) s =
   "type" := "Cos"
-    ~> "i"
-    := i
-    ~> "j"
-    := j
-    ~> "k"
-    := k
     ~> "l"
     := l
+    ~> "k"
+    := k
+    ~> "j"
+    := j
+    ~> "i"
+    := i
     ~> s
 
 writeRef (Just (CosNC xs)) s =
@@ -86,12 +86,12 @@ writeRef (Just (CosN xs)) s =
 
 writeRef (Just (Cos3 i j k)) s =
   "type" := "Cos3"
-    ~> "i"
-    := i
-    ~> "j"
-    := j
     ~> "k"
     := k
+    ~> "j"
+    := j
+    ~> "i"
+    := i
     ~> s
 
 writeRef (Just (Ref name)) s =

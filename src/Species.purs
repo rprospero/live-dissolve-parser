@@ -114,28 +114,27 @@ writeAtom index element x y z cls charge =
     ~>? jsonEmptyObject
 
 writeBond i j ref =
-  "i"
-    := i
-    ~> "j"
+  "j"
     := j
+    ~> "i"
+    := i
     ~> writeRef ref jsonEmptyObject
 
 writeAngle i j k ref =
-  "i"
-    := i
+  "k"
+    := k
     ~> "j"
     := j
-    ~> "k"
-    := k
+    ~> "i"
+    := i
     ~> writeRef ref jsonEmptyObject
 
 writeTorsion i j k l ref =
-  "i"
-    := i
-    ~> "j"
-    := j
+  "l" := l
     ~> "k"
     := k
-    ~> "l"
-    := l
+    ~> "j"
+    := j
+    ~> "i"
+    := i
     ~> writeRef ref jsonEmptyObject
