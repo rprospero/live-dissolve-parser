@@ -3,19 +3,18 @@ module Util where
 import Prelude
 import Control.Alternative ((<|>))
 import Data.Argonaut.Core
-import Data.Argonaut.Encode
-import Data.Array (toUnfoldable, some, many)
+import Data.Argonaut.Encode (class EncodeJson, (:=), (~>))
+import Data.Array (many, some)
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..))
 import Data.Int (toNumber)
 import Data.List as List
-import Data.List.NonEmpty as NE
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.CodeUnits (fromCharArray)
 import Data.String.CodeUnits as SCU
 import Foreign.Object (lookup)
 import Text.Parsing.Parser (Parser, fail)
-import Text.Parsing.Parser.Combinators (between, manyTill, (<?>))
+import Text.Parsing.Parser.Combinators (manyTill, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string)
 import Text.Parsing.Parser.Token (GenLanguageDef(..), LanguageDef, TokenParser, alphaNum, letter, makeTokenParser)
 

@@ -4,24 +4,20 @@ import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Foreign.Object
 import Prelude
+import Force (ForceInfo(..), writeRef)
 import Control.Alternative ((<|>))
 import Data.Array (cons, foldl, many, snoc)
 import Data.Generic.Rep (class Generic)
-import Data.List.NonEmpty as NE
-import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
-import Data.String.CodeUnits (fromCharArray)
-import Data.Tuple (Tuple(..))
-import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (many1Till, optionMaybe, try, (<?>))
-import Text.Parsing.Parser.String (char, satisfy, string)
-import Text.Parsing.Parser.Token (letter)
-import Util (MyParser, arbitrary, bool, dissolveTokens, namedContainer, notSpace, punt, signedFloat, updateArray, updateInner)
+import Data.Maybe (Maybe)
+import Text.Parsing.Parser.Combinators (optionMaybe, (<?>))
+import Text.Parsing.Parser.String (char)
+import Util (MyParser, arbitrary, bool, dissolveTokens, namedContainer, punt, signedFloat, updateArray, updateInner)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
   | Angle (Array String)
-  | Bond (Array String)
+  | Bond Int Int (Maybe ForceInfo)
   | Isotopologue (Array String)
   | Torsion (Array String)
   | Improper (Array String)
@@ -30,15 +26,6 @@ data SpeciesPart
 derive instance genericSpeciesPart :: Generic SpeciesPart _
 
 instance showSpeciesPart :: Show SpeciesPart where
-  show x = genericShow x
-
-data AngleInfo
-  = AngleRef String
-  | AngleInfo String Number Number
-
-derive instance genericAngleInfo :: Generic AngleInfo _
-
-instance showAngleInfo :: Show AngleInfo where
   show x = genericShow x
 
 data SitePart
@@ -52,21 +39,24 @@ derive instance genericSitePart :: Generic SitePart _
 instance showSitePart :: Show SitePart where
   show x = genericShow x
 
+forceInfo = harmonic <|> ref
+  where
+  harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> signedFloat <*> signedFloat)
+
+  ref = do
+    _ <- char '@'
+    value <- arbitrary
+    dissolveTokens.whiteSpace
+    pure $ Ref value
+
 atom :: MyParser SpeciesPart
 atom = dissolveTokens.symbol "Atom" *> (Atom <$> dissolveTokens.integer <*> dissolveTokens.identifier <*> signedFloat <*> signedFloat <*> signedFloat <*> dissolveTokens.stringLiteral <*> optionMaybe signedFloat)
 
 bond :: MyParser SpeciesPart
-bond = punt "Bond" Bond
+bond = dissolveTokens.symbol "Bond" *> (Bond <$> dissolveTokens.integer <*> dissolveTokens.integer <*> optionMaybe forceInfo)
 
 angle :: MyParser SpeciesPart
 angle = punt "Angle" Angle
-
-angleRef :: MyParser AngleInfo
-angleRef = master <|> raw
-  where
-  master = char '@' *> (AngleRef <$> arbitrary <* dissolveTokens.whiteSpace)
-
-  raw = AngleInfo <$> dissolveTokens.identifier <*> signedFloat <*> signedFloat
 
 torsion :: MyParser SpeciesPart
 torsion = punt "Torsion" Torsion
@@ -100,7 +90,7 @@ popOnSpecies xs s = foldl go s xs
 
   go s (Angle as) = updateArray "angles" (\c -> fromArray $ cons (encodeJson as) c) s
 
-  go s (Bond as) = updateArray "bonds" (\c -> fromArray $ cons (encodeJson as) c) s
+  go s (Bond i j ref) = updateArray "bonds" (\c -> fromArray $ flip snoc (writeBond i j ref) c) s
 
   go s (Torsion as) = updateArray "torsions" (\c -> fromArray $ cons (encodeJson as) c) s
 
@@ -132,3 +122,10 @@ writeAtom index element x y z cls charge =
     ~> "charge"
     :=? charge
     ~>? jsonEmptyObject
+
+writeBond i j ref =
+  "i"
+    := i
+    ~> "j"
+    := j
+    ~> writeRef ref jsonEmptyObject
