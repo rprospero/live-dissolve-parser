@@ -23,5 +23,5 @@ main = do
       case input of
         Left x -> log $ show x
         -- Right x -> log $ stringify $ encodeJson $ asDissolve x
-        Right x -> log $ show $ toXml $ asDissolve x
+        Right x -> log $ xmlEncode $ toXml $ asDissolve x
   pure unit

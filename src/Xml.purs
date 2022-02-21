@@ -1,10 +1,12 @@
 module Xml where
 
 import Prelude
-import Data.Map as M
 import Data.Array as A
-import Data.Show.Generic (genericShow)
+import Data.Foldable (null)
+import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Generic.Rep (class Generic)
+import Data.Map as M
+import Data.Show.Generic (genericShow)
 
 data XmlNode
   = XmlNode String (M.Map String String) (Array XmlNode)
@@ -29,3 +31,13 @@ infix 5 addChild as ::=>
 
 class ToXml a where
   toXml :: a -> XmlNode
+
+xmlEncode :: XmlNode -> String
+xmlEncode (XmlNode name as []) = "<" <> name <> " " <> encodeAttrs as <> " />"
+
+xmlEncode (XmlNode name as children) = "<" <> name <> encodeAttrs as <> ">" <> A.fold (map xmlEncode children) <> "</" <> name <> ">"
+
+encodeAttrs :: M.Map String String -> String
+encodeAttrs as = if null as then "" else foldlWithIndex go "" as
+  where
+  go k s v = s <> " " <> k <> "=\"" <> v <> "\""
