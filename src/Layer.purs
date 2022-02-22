@@ -5,13 +5,14 @@ import Data.Argonaut.Encode
 import Foreign.Object
 import Prelude
 import Util
+import Xml
 import Analyser (AnalyserPart, analyserPart)
 import Control.Alternative ((<|>))
-import Data.Array (foldl, many, snoc)
+import Data.Array (foldl, head, many, snoc, tail)
 import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
@@ -505,6 +506,7 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
 
   go s (Feedback x) = "feedback" := x ~> s
 
+  -- FIXME: unused items
   go s (Reference name value items) = updateArray "references" (fromArray <<< flip snoc ("name" := name ~> "value" := value ~> jsonEmptyObject)) s
 
   go s (Exchangeable x) = "exchangeable" := x ~> s
@@ -562,3 +564,199 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
 
   -- FIXME: Handle Analysers
   go s (Analyser parts) = updateArray "analyser" (\c -> fromArray $ flip snoc (encodeJson 7) c) s
+
+xmlOnLayer :: LayerPart -> XmlNode -> XmlNode
+xmlOnLayer (LayerFrequency x) s = ("frequency" ::= x) s
+
+xmlOnLayer (Module names terms) s =
+  let
+    name = maybe "undefined" identity $ head names
+
+    ts = maybe [] identity $ tail names
+  in
+    (addTerms "names" ts ::=> xmlActOn name (map xmlModule terms)) ::=> s
+
+xmlModule :: ModulePart -> XmlNode -> XmlNode
+xmlModule (Configuration x) = "configuration" ::= x
+
+xmlModule (Frequency x) = "frequency" ::= x
+
+xmlModule (Distance i j dist) = addChild $ xmlActOn "distance" [ "i" ::= i, "j" ::= j, "measure" ::= dist ]
+
+xmlModule (Format typ file) = addChild $ xmlActOn "format" [ "type" ::= typ, "file" ::= file ]
+
+xmlModule (BinWidth x) = "BinWidth" ::= x
+
+xmlModule (IntraBroadening x) = "IntraBroadening" ::= x
+
+xmlModule (Averaging x) = "Averaging" ::= x
+
+xmlModule (AveragingScheme x) = "AveragingScheme" ::= x
+
+xmlModule (Target x) = "Target" ::= x
+
+xmlModule (Data x) = "Data" ::= x
+
+xmlModule (SiteA name site Nothing) = addChild $ xmlActOn "siteA" [ "species" ::= name, "site" ::= site ]
+
+xmlModule (SiteA name site (Just (Tuple name2 site2))) = addChild $ xmlActOn "siteA" [ "species" ::= name, "site" ::= site, "species2" ::= name2, "site2" ::= site2 ]
+
+xmlModule (SiteB name site Nothing) = addChild $ xmlActOn "siteB" [ "species" ::= name, "site" ::= site ]
+
+xmlModule (SiteB name site (Just (Tuple name2 site2))) = addChild $ xmlActOn "siteB" [ "species" ::= name, "site" ::= site, "species2" ::= name2, "site2" ::= site2 ]
+
+xmlModule (AxisA x) = "axisA" ::= x
+
+xmlModule (AxisB x) = "axisB" ::= x
+
+xmlModule (Site xs) = addChild $ addTerms "site" xs
+
+xmlModule (DistanceRange x y z) = addChild $ xmlActOn "distanceRange" [ "x" ::= x, "y" ::= y, "z" ::= z ]
+
+xmlModule (AngleRange x y z) = addChild $ xmlActOn "angleRange" [ "x" ::= x, "y" ::= y, "z" ::= z ]
+
+xmlModule (ExcludeSameMolecule x) = "excludeSameMolecule" ::= x
+
+xmlModule (RangeX low high step) = addChild $ xmlActOn "rangeX" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+
+xmlModule (RangeY low high step) = addChild $ xmlActOn "rangeY" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+
+xmlModule (RangeZ low high step) = addChild $ xmlActOn "rangeZ" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+
+xmlModule (Range x) = "range" ::= x
+
+xmlModule (InternalData1D source dest) = addChild $ xmlActOn "internalData1D" [ "source" ::= source, "dest" ::= dest ]
+
+xmlModule (Multiplicity x y z) = addChild $ xmlActOn "multiplicity" [ "x" ::= x, "y" ::= y, "z" ::= z ]
+
+xmlModule (QBroadening xs) = addChild $ addTerms "qBroadening" xs
+
+xmlModule (QDelta x) = "qDelta" ::= x
+
+xmlModule (QMax x) = "qMax" ::= x
+
+xmlModule (QMin x) = "qMin" ::= x
+
+xmlModule (TestReflections x) = "testReflections" ::= x
+
+xmlModule (Method x) = "method" ::= x
+
+xmlModule (SourceRDF x) = "sourceRDF" ::= x
+
+xmlModule (SourceRDFs x) = "sourceRDFs" ::= x
+
+xmlModule (WindowFunction x) = "windowFunction" ::= x
+
+xmlModule (IncludeBragg x) = "includeBragg" ::= x
+
+xmlModule (BraggQBroadening typ i j) = addChild $ xmlActOn "braggQBroadening" [ "type" ::= typ, "i" ::= i, "j" ::= j ]
+
+xmlModule (SourceSQs x) = "sourceSQs" ::= x
+
+-- FIXME: Include Data1D parts
+xmlModule (Data1D loc kind file _) = addChild $ xmlActOn "data1D" [ "location" ::= loc, "format" ::= kind, "file" ::= file ]
+
+xmlModule (Threshold x) = "threshold" ::= x
+
+xmlModule (Isotopologue xs) = addChild $ addTerms "isotopologue" xs
+
+xmlModule (SampledDouble loc value) = addChild $ xmlActOn "sampledDouble" [ "location" ::= loc, "value" ::= value ]
+
+xmlModule (SampledVector location value ref) = addChild $ xmlActOn "sampledVector" [ "location" ::= location, "value" ::= value, "ref" ::= ref ]
+
+xmlModule (ErrorType x) = "errorType" ::= x
+
+xmlModule (Normalisation x) = "normalisation" ::= x
+
+xmlModule (RangeA low high) = addChild $ xmlActOn "rangeA" [ "low" ::= low, "high" ::= high ]
+
+xmlModule (RangeB low high) = addChild $ xmlActOn "rangeB" [ "low" ::= low, "high" ::= high ]
+
+xmlModule (RangeBEnabled x) = "rangeBEnabled" ::= x
+
+xmlModule (Test x) = "test" ::= x
+
+xmlModule (TestAbsEnergyEP name value) = addChild $ xmlActOn "testAbsEnergyEP" [ "name" ::= name, "value" ::= value ]
+
+xmlModule (TestAnalytic x) = "testAnalytic" ::= x
+
+xmlModule (TestReferenceInter xs) = addChild $ addTerms "testReferenceInter" xs
+
+xmlModule (TestReferenceIntra x) = "testReferenceIntra" ::= x
+
+-- FIXME: Handle Children
+xmlModule (TestReference name path _) = addChild $ xmlActOn "testReference" [ "name" ::= name, "path" ::= path ]
+
+xmlModule (TestThreshold x) = "testThreshold" ::= x
+
+xmlModule (Save x) = "save" ::= x
+
+xmlModule (EReq x) = "eReq" ::= x
+
+xmlModule (InpAFile x) = "inpAFile" ::= x
+
+xmlModule (NPItSs x) = "nPItSs" ::= x
+
+xmlModule (Feedback x) = "feedback" ::= x
+
+-- FIXME: include items
+xmlModule (Reference name value items) = addChild $ xmlActOn "reference" [ "name" ::= name, "value" ::= value ]
+
+xmlModule (Exchangeable x) = addChild $ addTerms "exchangeable" x
+
+xmlModule (ExpansionFunction x) = "expansionFunction" ::= x
+
+xmlModule (PCofFile x) = "pCofFile" ::= x
+
+xmlModule (OnlyWhenEnergyStable x) = "onlyWhenEnergyStable" ::= x
+
+xmlModule (ReferenceFTQMin x) = "referenceFTQMin" ::= x
+
+xmlModule (ReferenceFTQMax x) = "referenceFTQMax" ::= x
+
+xmlModule (ReferenceNormalisation x) = "referenceNormalisation" ::= x
+
+xmlModule (ReferenceWindowFunction x) = "referenceWindowFunction" ::= x
+
+xmlModule (SaveRepresentativeGR x) = "saveRepresentativeGR" ::= x
+
+xmlModule (SaveEstimatedPartials x) = "saveEstimatedPartials" ::= x
+
+xmlModule (SaveReference x) = "saveReference" ::= x
+
+xmlModule (SaveSQ x) = "saveSQ" ::= x
+
+xmlModule (Species x) = "species" ::= x
+
+xmlModule (AtomType index name) = addChild $ xmlActOn "atomTypes" [ "index" ::= index, "type" ::= name ]
+
+xmlModule (TotalCharge x) = "totalCharge" ::= x
+
+xmlModule (NSteps x) = "nSteps" ::= x
+
+xmlModule (InternalTest x) = "internalTest" ::= x
+
+xmlModule (RotationStepSize x) = "rotationStepSize" ::= x
+
+xmlModule (TranslationStepSize x) = "translationStepSize" ::= x
+
+xmlModule (Bond i j const eq) = addChild $ xmlActOn "bond" [ "i" ::= i, "j" ::= j, "const" ::= const, "eq" ::= eq ]
+
+-- FIXME: Handle Terms
+xmlModule (Angle i j k terms) = addChild $ xmlActOn "angle" [ "i" ::= i, "j" ::= j, "k" ::= k ]
+
+-- FIXME: Handle Terms
+xmlModule (Torsion i j k l terms) = addChild $ xmlActOn "torsion" [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ]
+
+-- FIXME: Handle Terms
+xmlModule (Improper i j k l terms) = addChild $ xmlActOn "improper" [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ]
+
+xmlModule (OverwritePotentials x) = "overwritePotentials" ::= x
+
+xmlModule (RawNum value) = addChild $ xmlActOn "rawNum" [ "value" ::= value ]
+
+-- FIXME: Handle children
+xmlModule (Export format path _) = addChild $ xmlActOn "Export" [ "format" ::= format, "path" ::= path ]
+
+-- FIXME: Handle Analyser
+xmlModule (Analyser parts) = identity

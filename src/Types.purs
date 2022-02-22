@@ -48,6 +48,7 @@ instance toXmlDissolve :: ToXml Dissolve where
     flip execState (xmlEmptyNode "dissolve")
       $ do
           _ <- modify (xmlSpecies species)
+          _ <- modify (xmlLayer layer)
           _ <- modify (xmlConfig config)
           _ <- modify (xmlPair pair)
           modify (xmlMaster master)
@@ -56,6 +57,11 @@ writeLayer :: (Array (Tuple String (Array LayerPart))) -> Json -> Json
 writeLayer xs s = "layer" := foldl go jsonEmptyObject xs ~> s
   where
   go state (Tuple name xs) = name := (popOnLayer xs jsonEmptyObject) ~> state
+
+xmlLayer :: (Array (Tuple String (Array LayerPart))) -> XmlNode -> XmlNode
+xmlLayer xs s = foldl go s xs
+  where
+  go state (Tuple name ss) = (foldl (flip xmlOnLayer) ("name" ::= name $ xmlEmptyNode "layer") ss) ::=> state
 
 writeSpecies :: (Array (Tuple String (Array SpeciesPart))) -> Json -> Json
 writeSpecies xs s = "species" := foldl go jsonEmptyObject xs ~> s
