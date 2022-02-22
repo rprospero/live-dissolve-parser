@@ -11,6 +11,7 @@ import Data.Array (catMaybes, foldl, head, tail)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
+import Xml
 
 data PairPart
   = Range Number
@@ -66,3 +67,20 @@ popOnPair xs s = foldl go s xs
   go s (Parameters name elem charge ref) = updateInner "parameters" (\c -> name := value ~> c) s
     where
     value = "element" := elem ~> "charge" := charge ~> writeRef (pure ref) jsonEmptyObject
+
+xmlOnPair :: PairPart -> XmlNode -> XmlNode
+xmlOnPair (Range x) s = ("range" ::= x) s
+
+xmlOnPair (Delta x) s = ("delta" ::= x) s
+
+xmlOnPair (IncludeCoulomb x) s = ("includeCoulomb" ::= x) s
+
+xmlOnPair (CoulombTruncation x) s = ("coulombTruncation" ::= x) s
+
+xmlOnPair (ShortRangeTruncation x) s = ("shortRangeTruncation" ::= x) s
+
+xmlOnPair (ManualChargeSource x) s = ("manualChargeSource" ::= x) s
+
+xmlOnPair (ForceChargeSource x) s = ("forceChargeSource" ::= x) s
+
+xmlOnPair (Parameters name elem charge ref) s = xmlActOn "parameters" [ "name" ::= name, "element" ::= elem, "charge" ::= charge, xmlRef $ pure ref ] ::=> s

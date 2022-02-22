@@ -1,21 +1,21 @@
 module Types where
 
+import Configuration
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Foreign.Object
+import Layer
 import Master
 import PairPotential
 import Prelude
 import Species
-import Configuration
+import Xml
 import Control.Monad.State (execState, modify)
 import Data.Array (catMaybes, foldl, head, tail)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
-import Layer
-import Xml
 
 data Section
   = Species String (Array SpeciesPart)
@@ -48,6 +48,7 @@ instance toXmlDissolve :: ToXml Dissolve where
     flip execState (xmlEmptyNode "dissolve")
       $ do
           _ <- modify (xmlSpecies species)
+          _ <- modify (xmlPair pair)
           modify (xmlMaster master)
 
 writeLayer :: (Array (Tuple String (Array LayerPart))) -> Json -> Json
@@ -74,6 +75,11 @@ writePair :: Maybe (Array PairPart) -> Json -> Json
 writePair Nothing s = s
 
 writePair (Just xs) s = "PairPotentials" := (popOnPair xs jsonEmptyObject) ~> s
+
+xmlPair :: (Maybe (Array PairPart)) -> XmlNode -> XmlNode
+xmlPair Nothing s = s
+
+xmlPair (Just xs) s = xmlActOn "pairPotentials" (map xmlOnPair xs) ::=> s
 
 writeMaster (Just xs) s = "master" := (popOnMaster xs jsonEmptyObject) ~> s
 
