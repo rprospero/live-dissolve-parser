@@ -5,6 +5,8 @@ import Data.Argonaut.Encode
 import Force
 import Foreign.Object
 import Prelude
+import Util
+import Xml
 import Control.Alternative ((<|>))
 import Data.Array (cons, foldl, many, snoc)
 import Data.Generic.Rep (class Generic)
@@ -12,8 +14,6 @@ import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser.Combinators (optionMaybe, (<?>))
 import Text.Parsing.Parser.String (char)
-import Util
-import Xml
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
@@ -182,8 +182,26 @@ xmlOnSpecies (Torsion i j k l ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= 
 
 xmlOnSpecies (Improper i j k l ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) <<< ("k" ::= k) <<< ("l" ::= l) $ xmlEmptyNode "angle") ::=> s
 
--- go s (Atom index element x y z cls charge) = updateArray "atoms" (\c -> fromArray $ flip snoc (writeAtom index element x y z cls charge) c) s
--- go s (BondType i j name) = updateArray "bondTypes" (\c -> fromArray $ flip snoc (writeBondType i j name) c) s
--- go s (Isotopologue as) = updateArray "isotopologues" (\c -> fromArray $ cons (encodeJson as) c) s
--- go s (Site name vs) = updateInner "site" (writeSite name vs) s
-xmlOnSpecies _ s = s
+xmlOnSpecies (BondType i j name) s = (("name" ::= name) <<< ("i" ::= i) <<< ("j" ::= j) $ xmlEmptyNode "bondType") ::=> s
+
+xmlOnSpecies (Atom index element x y z cls charge) s = (("index" ::= index) <<< ("element" ::= element) <<< ("x" ::= x) <<< ("y" ::= y) <<< ("z" ::= z) <<< ("class" ::= cls) <<< ("charge" ::=? charge) $ xmlEmptyNode "atom") ::=> s
+
+xmlOnSpecies (Isotopologue xs) s = (foldl go (xmlEmptyNode "Isotopolgue") xs) ::=> s
+  where
+  go c x = ("value" ::= x $ xmlEmptyNode "term") ::=> c
+
+xmlOnSpecies (Site name vs) s = (go vs <<< ("name" ::= name) $ (xmlEmptyNode "Site")) ::=> s
+  where
+  go xs s = foldl go' s xs
+
+  go' c (Origin ns) = (foldl go'' (xmlEmptyNode "origin") ns) ::=> c
+
+  go' c (XAxis ns) = (foldl go'' (xmlEmptyNode "xAxis") ns) ::=> c
+
+  go' c (YAxis ns) = (foldl go'' (xmlEmptyNode "yAxis") ns) ::=> c
+
+  go' c (OriginMassWeighted x) = ("originMassWeighted" ::= x) c
+
+  go'' c n = (("value" ::= n) $ xmlEmptyNode "term") ::=> c
+
+xmlOnSpecies Noop s = s

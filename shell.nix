@@ -14,6 +14,7 @@ pkgs.mkShell {
   buildInputs = [
     pkgs.json2yaml
     pkgs.yj
+    pkgs.xmlstarlet
     pkgs.nodejs
     easy-ps.purs-0_14_4
     easy-ps.purs-tidy

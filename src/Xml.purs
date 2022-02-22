@@ -6,6 +6,7 @@ import Data.Foldable (null)
 import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Generic.Rep (class Generic)
 import Data.Map as M
+import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 
 data XmlNode
@@ -31,10 +32,20 @@ instance toAttrNumber :: ToAttr Number where
 instance toAttrInt :: ToAttr Int where
   toAttr = show
 
+instance toArrtBoolean :: ToAttr Boolean where
+  toAttr = show
+
 attr :: forall a. ToAttr a => String -> a -> (XmlNode -> XmlNode)
 attr key value (XmlNode name as cs) = XmlNode name (M.insert key (toAttr value) as) cs
 
 infix 5 attr as ::=
+
+mayAttr :: forall a. ToAttr a => String -> Maybe a -> (XmlNode -> XmlNode)
+mayAttr key Nothing s = s
+
+mayAttr key (Just value) (XmlNode name as cs) = XmlNode name (M.insert key (toAttr value) as) cs
+
+infix 5 mayAttr as ::=?
 
 addChild :: XmlNode -> XmlNode -> XmlNode
 addChild child (XmlNode name as cs) = XmlNode name as (cs `A.snoc` child)
