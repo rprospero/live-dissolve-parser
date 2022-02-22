@@ -13,6 +13,7 @@ import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
 import Util (MyParser, container, dissolveTokens, namedContainer, namedValueContainer, punt, signedFloat, signedNum, sksContainer)
+import Xml
 
 data AnalyserPart
   = Site (Array String)
@@ -158,3 +159,73 @@ value = dissolveTokens.symbol "Value" *> (Value <$> signedFloat)
 analyserPart = do
   _ <- pure 1
   site <|> select <|> forEach <|> excludeSameMolecule <|> calculateDistance <|> calculateAngle <|> collect1D <|> collect2D <|> subCollect <|> quantityX <|> quantityY <|> rangeX <|> rangeY <|> process1D <|> process2D <|> labelValue <|> sourceData <|> labelX <|> labelY <|> normalisation <|> operateSitePopulationNormalise <|> operateNumberDensityNormalise <|> operateSphericalShellNormalise <|> dynamicSite <|> element <|> sameMoleculeAsSite <|> operateExpression <|> operateNormalise <|> expression <|> value <|> i <|> j <|> k <|> l <?> "Procedure Node"
+
+---------
+xmlAnalyser :: AnalyserPart -> XmlNode -> XmlNode
+xmlAnalyser (Site xs) = addChild $ addTerms "site" xs
+
+xmlAnalyser (Select name parts) = addChild $ xmlActOn "select" $ [ "name" ::= name ] <> map xmlAnalyser parts
+
+xmlAnalyser (ForEach parts) = addChild $ xmlActOn "forEach" $ map xmlAnalyser parts
+
+xmlAnalyser (ExcludeSameMolecule x) = "excludeSameMolecule" ::= x
+
+xmlAnalyser (CalculateDistance name parts) = addChild $ xmlActOn "calculateDistance" $ [ "name" ::= name ] <> map xmlAnalyser parts
+
+xmlAnalyser (CalculateAngle name parts) = addChild $ xmlActOn "calculateAngle" $ [ "name" ::= name ] <> map xmlAnalyser parts
+
+xmlAnalyser (I x) = "i" ::= x
+
+xmlAnalyser (J x) = "j" ::= x
+
+xmlAnalyser (K x) = "k" ::= x
+
+xmlAnalyser (L x) = "l" ::= x
+
+xmlAnalyser (Collect1D name parts) = addChild $ xmlActOn "collect1D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+
+xmlAnalyser (Collect2D name parts) = addChild $ xmlActOn "collect2D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+
+xmlAnalyser (SubCollect parts) = addChild $ xmlActOn "subCollect" $ map xmlAnalyser parts
+
+xmlAnalyser (QuantityX x) = "quantityX" ::= x
+
+xmlAnalyser (QuantityY x) = "quantityY" ::= x
+
+xmlAnalyser (RangeX low high step) = addChild $ xmlActOn "rangeX" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+
+xmlAnalyser (RangeY low high step) = addChild $ xmlActOn "rangeY" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+
+xmlAnalyser (Process1D name parts) = addChild $ xmlActOn "process1D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+
+xmlAnalyser (Process2D name parts) = addChild $ xmlActOn "process2D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+
+xmlAnalyser (SourceData x) = "sourceData" ::= x
+
+xmlAnalyser (LabelValue x) = "labelValue" ::= x
+
+xmlAnalyser (LabelX x) = "labelX" ::= x
+
+xmlAnalyser (LabelY x) = "labelY" ::= x
+
+xmlAnalyser (Normalisation parts) = addChild $ xmlActOn "normalisation" $ map xmlAnalyser parts
+
+xmlAnalyser (OperateSitePopulationNormalise parts) = addChild $ xmlActOn "operateSitePopulationNormalise" $ map xmlAnalyser parts
+
+xmlAnalyser (OperateNumberDensityNormalise parts) = addChild $ xmlActOn "operateNumberDensityNormalise" $ map xmlAnalyser parts
+
+xmlAnalyser (OperateSphericalShellNormalise parts) = addChild $ xmlActOn "operateSphericalShellNormalise" $ map xmlAnalyser parts
+
+xmlAnalyser (DynamicSite parts) = addChild $ xmlActOn "dynamicSite" $ map xmlAnalyser parts
+
+xmlAnalyser (OperateExpression parts) = addChild $ xmlActOn "operateExpression" $ map xmlAnalyser parts
+
+xmlAnalyser (OperateNormalise parts) = addChild $ xmlActOn "operateNormalise" $ map xmlAnalyser parts
+
+xmlAnalyser (Element x) = "element" ::= x
+
+xmlAnalyser (SameMoleculeAsSite x) = "sameMoleculeAsSite" ::= x
+
+xmlAnalyser (Expression x) = "expression" ::= x
+
+xmlAnalyser (Value x) = "value" ::= x

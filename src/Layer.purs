@@ -6,7 +6,7 @@ import Foreign.Object
 import Prelude
 import Util
 import Xml
-import Analyser (AnalyserPart, analyserPart)
+import Analyser
 import Control.Alternative ((<|>))
 import Data.Array (foldl, head, many, snoc, tail)
 import Data.Either (Either)
@@ -756,7 +756,7 @@ xmlModule (OverwritePotentials x) = "overwritePotentials" ::= x
 xmlModule (RawNum value) = addChild $ xmlActOn "rawNum" [ "value" ::= value ]
 
 -- FIXME: Handle children
-xmlModule (Export format path _) = addChild $ xmlActOn "Export" [ "format" ::= format, "path" ::= path ]
+xmlModule (Export format path _) = addChild $ xmlActOn "export" [ "format" ::= format, "path" ::= path ]
 
 -- FIXME: Handle Analyser
-xmlModule (Analyser parts) = identity
+xmlModule (Analyser parts) = addChild $ xmlActOn "analyser" (map xmlAnalyser parts)
