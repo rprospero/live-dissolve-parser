@@ -1,8 +1,11 @@
 module Analyser where
 
+import Data.Argonaut.Core
+import Data.Argonaut.Encode
 import Prelude
+import Xml
 import Control.Alternative ((<|>))
-import Data.Array (many)
+import Data.Array (foldl, many)
 import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
@@ -13,7 +16,6 @@ import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
 import Util (MyParser, container, dissolveTokens, namedContainer, namedValueContainer, punt, signedFloat, signedNum, sksContainer)
-import Xml
 
 data AnalyserPart
   = Site (Array String)
@@ -161,6 +163,77 @@ analyserPart = do
   site <|> select <|> forEach <|> excludeSameMolecule <|> calculateDistance <|> calculateAngle <|> collect1D <|> collect2D <|> subCollect <|> quantityX <|> quantityY <|> rangeX <|> rangeY <|> process1D <|> process2D <|> labelValue <|> sourceData <|> labelX <|> labelY <|> normalisation <|> operateSitePopulationNormalise <|> operateNumberDensityNormalise <|> operateSphericalShellNormalise <|> dynamicSite <|> element <|> sameMoleculeAsSite <|> operateExpression <|> operateNormalise <|> expression <|> value <|> i <|> j <|> k <|> l <?> "Procedure Node"
 
 ---------
+writeAnalyser :: Array AnalyserPart -> Json
+writeAnalyser = foldl go jsonEmptyObject
+  where
+  go s (Site xs) = "site" := xs ~> s
+
+  go s (Select name parts) = "select" := (writeAnalyser parts) ~> s
+
+  go s (ForEach parts) = "forEach" := (writeAnalyser parts) ~> s
+
+  go s (ExcludeSameMolecule x) = "excludeSameMolecule" := x ~> s
+
+  go s (CalculateDistance name parts) = "calculateDistance" := ("name" := name ~> writeAnalyser parts) ~> s
+
+  go s (CalculateAngle name parts) = "calculateAngle" := ("name" := name ~> writeAnalyser parts) ~> s
+
+  go s (I x) = "I" := x ~> s
+
+  go s (J x) = "J" := x ~> s
+
+  go s (K x) = "K" := x ~> s
+
+  go s (L x) = "L" := x ~> s
+
+  go s (Collect1D name parts) = "collect1D" := ("name" := name ~> writeAnalyser parts) ~> s
+
+  go s (Collect2D name parts) = "collect2D" := ("name" := name ~> writeAnalyser parts) ~> s
+
+  go s (SubCollect parts) = "subcollect" := writeAnalyser parts ~> s
+
+  go s (QuantityX x) = "quantityX" := x ~> s
+
+  go s (QuantityY x) = "quantityY" := x ~> s
+
+  go s (RangeX low high step) = "rangeX" := ("low" := low ~> "high" := high ~> "step" := step ~> jsonEmptyObject) ~> s
+
+  go s (RangeY low high step) = "rangeY" := ("low" := low ~> "high" := high ~> "step" := step ~> jsonEmptyObject) ~> s
+
+  go s (Process1D name parts) = "process1D" := ("name" := name ~> writeAnalyser parts) ~> s
+
+  go s (Process2D name parts) = "process2D" := ("name" := name ~> writeAnalyser parts) ~> s
+
+  go s (SourceData x) = "sourceData" := x ~> s
+
+  go s (LabelValue x) = "labelValue" := x ~> s
+
+  go s (LabelX x) = "labelX" := x ~> s
+
+  go s (LabelY x) = "labelY" := x ~> s
+
+  go s (Normalisation parts) = "normalisation" := writeAnalyser parts ~> s
+
+  go s (OperateSitePopulationNormalise parts) = "operateSitePopulationNormalise" := writeAnalyser parts ~> s
+
+  go s (OperateNumberDensityNormalise parts) = "operateNumberDensityNormalise" := writeAnalyser parts ~> s
+
+  go s (OperateSphericalShellNormalise parts) = "operateSphericalShellNormalise" := writeAnalyser parts ~> s
+
+  go s (DynamicSite parts) = "dynamicSite" := writeAnalyser parts ~> s
+
+  go s (SameMoleculeAsSite x) = "sameMoleculeAsSite" := x ~> s
+
+  go s (Element x) = "element" := x ~> s
+
+  go s (OperateExpression parts) = "operateExpression" := writeAnalyser parts ~> s
+
+  go s (OperateNormalise parts) = "operateNormalise" := writeAnalyser parts ~> s
+
+  go s (Expression x) = "expression" := x ~> s
+
+  go s (Value x) = "value" := x ~> s
+
 xmlAnalyser :: AnalyserPart -> XmlNode -> XmlNode
 xmlAnalyser (Site xs) = addChild $ addTerms "site" xs
 

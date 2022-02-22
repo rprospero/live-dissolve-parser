@@ -464,8 +464,9 @@ writeModule name terms = foldl go ("name" := name ~> "names" := terms ~> jsonEmp
 
   go s (SourceSQs x) = "sourceSQs" := x ~> s
 
-  -- FIXME: Include Data1D parts
-  go s (Data1D loc kind file _) = "data1D" := ("location" := loc ~> "format" := kind ~> "file" := file ~> jsonEmptyObject) ~> s
+  go s (Data1D loc kind file []) = "data1D" := ("location" := loc ~> "format" := kind ~> "file" := file ~> jsonEmptyObject) ~> s
+
+  go s (Data1D loc kind file contents) = "data1D" := ("contents" := writeData1D contents ~> "location" := loc ~> "format" := kind ~> "file" := file ~> jsonEmptyObject) ~> s
 
   go s (Threshold x) = "threshold" := x ~> s
 
@@ -495,8 +496,9 @@ writeModule name terms = foldl go ("name" := name ~> "names" := terms ~> jsonEmp
 
   go s (TestReferenceIntra x) = "testReferenceIntra" := x ~> s
 
-  -- FIXME: Handle children
-  go s (TestReference name path _) = "testReference" := ("name" := name ~> "path" := path ~> jsonEmptyObject) ~> s
+  go s (TestReference name path []) = "testReference" := ("name" := name ~> "path" := path ~> jsonEmptyObject) ~> s
+
+  go s (TestReference name path contents) = "testReference" := ("contents" := writeData1D contents ~> "name" := name ~> "path" := path ~> jsonEmptyObject) ~> s
 
   go s (TestThreshold x) = "testThreshold" := x ~> s
 
@@ -510,8 +512,9 @@ writeModule name terms = foldl go ("name" := name ~> "names" := terms ~> jsonEmp
 
   go s (Feedback x) = "feedback" := x ~> s
 
-  -- FIXME: unused items
-  go s (Reference name value items) = updateArray "references" (fromArray <<< flip snoc ("name" := name ~> "value" := value ~> jsonEmptyObject)) s
+  go s (Reference name value []) = updateArray "references" (fromArray <<< flip snoc ("name" := name ~> "value" := value ~> jsonEmptyObject)) s
+
+  go s (Reference name value contents) = updateArray "references" (fromArray <<< flip snoc ("contents" := writeData1D contents ~> "name" := name ~> "value" := value ~> jsonEmptyObject)) s
 
   go s (Exchangeable x) = "exchangeable" := x ~> s
 
@@ -563,11 +566,18 @@ writeModule name terms = foldl go ("name" := name ~> "names" := terms ~> jsonEmp
 
   go s (RawNum x) = updateArray "rawNumbers" (fromArray <<< flip snoc (encodeJson x)) s
 
-  -- FIXME: Handle children
-  go s (Export format path _) = "export" := ("format" := format ~> "path" := path ~> jsonEmptyObject) ~> s
+  go s (Export format path []) = "export" := ("format" := format ~> "path" := path ~> jsonEmptyObject) ~> s
 
-  -- FIXME: Handle Analysers
-  go s (Analyser parts) = updateArray "analyser" (\c -> fromArray $ flip snoc (encodeJson 7) c) s
+  go s (Export format path items) = "export" := ("items" := writeData1D items ~> "format" := format ~> "path" := path ~> jsonEmptyObject) ~> s
+
+  go s (Analyser parts) = updateArray "analyser" (\c -> fromArray $ flip snoc (writeAnalyser parts) c) s
+
+writeData1D = foldl go jsonEmptyObject
+  where
+  go :: Json -> Data1DPart -> Json
+  go s (Y x) = "y" := x ~> s
+
+  go s (XMin x) = "xMin" := x ~> s
 
 xmlOnLayer :: LayerPart -> XmlNode -> XmlNode
 xmlOnLayer (LayerFrequency x) s = ("frequency" ::= x) s
@@ -651,8 +661,7 @@ xmlModule (BraggQBroadening typ i j) = addChild $ xmlActOn "braggQBroadening" [ 
 
 xmlModule (SourceSQs x) = "sourceSQs" ::= x
 
--- FIXME: Include Data1D parts
-xmlModule (Data1D loc kind file _) = addChild $ xmlActOn "data1D" [ "location" ::= loc, "format" ::= kind, "file" ::= file ]
+xmlModule (Data1D loc kind file children) = addChild $ xmlActOn "data1D" $ [ "location" ::= loc, "format" ::= kind, "file" ::= file ] <> map (\x -> addChild $ xmlData1D x) children
 
 xmlModule (Threshold x) = "threshold" ::= x
 
@@ -682,8 +691,7 @@ xmlModule (TestReferenceInter xs) = addChild $ addTerms "testReferenceInter" xs
 
 xmlModule (TestReferenceIntra x) = "testReferenceIntra" ::= x
 
--- FIXME: Handle Children
-xmlModule (TestReference name path _) = addChild $ xmlActOn "testReference" [ "name" ::= name, "path" ::= path ]
+xmlModule (TestReference name path children) = addChild $ xmlActOn "testReference" $ [ "name" ::= name, "path" ::= path ] <> map (\x -> addChild $ xmlData1D x) children
 
 xmlModule (TestThreshold x) = "testThreshold" ::= x
 
@@ -697,8 +705,7 @@ xmlModule (NPItSs x) = "nPItSs" ::= x
 
 xmlModule (Feedback x) = "feedback" ::= x
 
--- FIXME: include items
-xmlModule (Reference name value items) = addChild $ xmlActOn "reference" [ "name" ::= name, "value" ::= value ]
+xmlModule (Reference name value children) = addChild $ xmlActOn "reference" $ [ "name" ::= name, "value" ::= value ] <> map (\x -> addChild $ xmlData1D x) children
 
 xmlModule (Exchangeable x) = addChild $ addTerms "exchangeable" x
 
@@ -740,21 +747,21 @@ xmlModule (TranslationStepSize x) = "translationStepSize" ::= x
 
 xmlModule (Bond i j const eq) = addChild $ xmlActOn "bond" [ "i" ::= i, "j" ::= j, "const" ::= const, "eq" ::= eq ]
 
--- FIXME: Handle Terms
-xmlModule (Angle i j k terms) = addChild $ xmlActOn "angle" [ "i" ::= i, "j" ::= j, "k" ::= k ]
+xmlModule (Angle i j k terms) = addChild $ xmlActOn "angle" $ [ "i" ::= i, "j" ::= j, "k" ::= k ] <> map (\t s -> ("value" ::= t) (xmlEmptyNode "term") ::=> s) terms
 
--- FIXME: Handle Terms
-xmlModule (Torsion i j k l terms) = addChild $ xmlActOn "torsion" [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ]
+xmlModule (Torsion i j k l terms) = addChild $ xmlActOn "torsion" $ [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] <> map (\t s -> ("value" ::= t) (xmlEmptyNode "term") ::=> s) terms
 
--- FIXME: Handle Terms
-xmlModule (Improper i j k l terms) = addChild $ xmlActOn "improper" [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ]
+xmlModule (Improper i j k l terms) = addChild $ xmlActOn "improper" $ [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] <> map (\t s -> ("value" ::= t) (xmlEmptyNode "term") ::=> s) terms
 
 xmlModule (OverwritePotentials x) = "overwritePotentials" ::= x
 
 xmlModule (RawNum value) = addChild $ xmlActOn "rawNum" [ "value" ::= value ]
 
--- FIXME: Handle children
-xmlModule (Export format path _) = addChild $ xmlActOn "export" [ "format" ::= format, "path" ::= path ]
+xmlModule (Export format path children) = addChild $ xmlActOn "export" $ [ "format" ::= format, "path" ::= path ] <> map (\x -> addChild $ xmlData1D x) children
 
--- FIXME: Handle Analyser
 xmlModule (Analyser parts) = addChild $ xmlActOn "analyser" (map xmlAnalyser parts)
+
+xmlData1D :: Data1DPart -> XmlNode
+xmlData1D (Y y) = xmlActOn "y" [ "value" ::= y ]
+
+xmlData1D (XMin x) = xmlActOn "xMin" [ "value" ::= x ]
