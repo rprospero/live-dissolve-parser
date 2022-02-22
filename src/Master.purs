@@ -7,11 +7,11 @@ import Force
 import Prelude
 import Control.Alternative ((<|>))
 import Data.Generic.Rep (class Generic)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
-import Text.Parsing.Parser (Parser)
 import Text.Parsing.Parser.Combinators (optionMaybe)
-import Util (arbitrary, dissolveTokens, punt, signedFloat, updateArray)
+import Util (arbitrary, dissolveTokens, updateArray)
+import Xml
 
 data MasterPart
   = Angle String (Maybe ForceInfo)
@@ -47,3 +47,12 @@ popOnMaster xs s = foldl go s xs
   go s (Improper name ref) = updateArray "improper" (\c -> fromArray $ flip snoc (writeMaster name ref) c) s
 
 writeMaster name ref = "name" := name ~> writeRef ref jsonEmptyObject
+
+xmlOnMaster :: MasterPart -> XmlNode -> XmlNode
+xmlOnMaster (Bond name ref) s = xmlActOn "bond" [ "name" ::= name, xmlRef ref ] ::=> s
+
+xmlOnMaster (Angle name ref) s = xmlActOn "angle" [ "name" ::= name, xmlRef ref ] ::=> s
+
+xmlOnMaster (Torsion name ref) s = xmlActOn "torsion" [ "name" ::= name, xmlRef ref ] ::=> s
+
+xmlOnMaster (Improper name ref) s = xmlActOn "improper" [ "name" ::= name, xmlRef ref ] ::=> s

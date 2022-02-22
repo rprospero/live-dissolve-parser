@@ -47,7 +47,8 @@ instance toXmlDissolve :: ToXml Dissolve where
   toXml (Dissolve master config layer pair species) =
     flip execState (xmlEmptyNode "dissolve")
       $ do
-          modify (xmlSpecies species)
+          _ <- modify (xmlSpecies species)
+          modify (xmlMaster master)
 
 writeLayer :: (Array (Tuple String (Array LayerPart))) -> Json -> Json
 writeLayer xs s = "layer" := foldl go jsonEmptyObject xs ~> s
@@ -77,3 +78,8 @@ writePair (Just xs) s = "PairPotentials" := (popOnPair xs jsonEmptyObject) ~> s
 writeMaster (Just xs) s = "master" := (popOnMaster xs jsonEmptyObject) ~> s
 
 writeMaster Nothing s = s
+
+xmlMaster :: (Maybe (Array MasterPart)) -> XmlNode -> XmlNode
+xmlMaster Nothing s = s
+
+xmlMaster (Just xs) s = xmlActOn "master" (map xmlOnMaster xs) ::=> s
