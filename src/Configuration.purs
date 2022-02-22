@@ -13,6 +13,7 @@ import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
 import Text.Parsing.Parser.Combinators (between)
 import Text.Parsing.Parser.String (noneOf, skipSpaces, char, string)
+import Xml
 
 data ConfigurationPart
   = Generator (Array GeneratorPart)
@@ -171,3 +172,47 @@ writeParam ps s = foldl go s ps
       name = maybe "undefined" identity $ head ps
     in
       name := tail ps ~> s
+
+xmlOnConfig :: ConfigurationPart -> XmlNode -> XmlNode
+xmlOnConfig (Temperature x) s = ("temperature" ::= x) s
+
+xmlOnConfig (SizeFactor x) s = ("sizeFactor" ::= x) s
+
+xmlOnConfig (CellDivisionLength x) s = ("cellDivisionLength" ::= x) s
+
+xmlOnConfig (InputCoordinates name value) s = xmlActOn "inputCoordinates" [ "name" ::= name, "value" ::= value ] ::=> s
+
+xmlOnConfig (Generator xs) s = xmlActOn "generator" (map xmlGenerator xs) ::=> s
+
+xmlGenerator :: GeneratorPart -> XmlNode -> XmlNode
+xmlGenerator (Add as) s = xmlActOn "add" (map go as) ::=> s
+  where
+  go (Density name units) c = xmlActOn "density" [ "name" ::= name, "units" ::= units ] ::=> c
+
+  go (Population x) c = ("population" ::= x) c
+
+  go (Species x) c = ("species" ::= x) c
+
+  go (BoxAction x) c = ("boxAction" ::= x) c
+
+  go (Rotate x) c = ("rotate" ::= x) c
+
+  go (Positioning x) c = ("positioning" ::= x) c
+
+xmlGenerator (Box bs) s = xmlActOn "box" (map go bs) ::=> s
+  where
+  go (Length x y z) c = xmlActOn "length" [ "x" ::= x, "y" ::= y, "z" ::= z ] ::=> c
+
+  go (Angles x y z) c = xmlActOn "angles" [ "x" ::= x, "y" ::= y, "z" ::= z ] ::=> c
+
+  go (NonPeriodic x) c = ("nonPeriodic" ::= x) c
+
+xmlGenerator (Parameters ps) s = xmlActOn "parameters" (map go ps) ::=> s
+  where
+  go (Param ps) c =
+    let
+      name = maybe "undefined" identity $ head ps
+
+      ts = maybe [] identity $ tail ps
+    in
+      ("name" ::= name $ (addTerms "parameter" ts)) ::=> c
