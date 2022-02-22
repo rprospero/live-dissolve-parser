@@ -1,26 +1,28 @@
 module Layer where
 
+import Analyser
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Foreign.Object
 import Prelude
 import Util
 import Xml
-import Analyser
 import Control.Alternative ((<|>))
 import Data.Array (foldl, head, many, snoc, tail)
 import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
+import Data.List as List
 import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
+import Data.String.CodeUnits (fromCharArray)
 import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..))
-import Text.Parsing.Parser.Combinators (between, many1Till, optional, optionMaybe, skipMany, try, (<?>))
+import Text.Parsing.Parser.Combinators (between, manyTill, many1Till, optional, optionMaybe, skipMany, try, (<?>))
 import Text.Parsing.Parser.String (char, satisfy, string, whiteSpace)
 
 data LayerPart
-  = Module (Array String) (Array ModulePart)
+  = Module String (Array String) (Array ModulePart)
   | LayerFrequency Int
 
 derive instance genericLayerPart :: Generic LayerPart _
@@ -364,10 +366,12 @@ modulePart = species <|> atomType <|> totalCharge <|> bond <|> angleRange <|> an
 
 module_ :: MyParser LayerPart
 module_ = do
-  terms <- punt "Module" identity
-  contents <- many1Till modulePart $ string "End"
-  _ <- dissolveTokens.reserved "Module"
-  pure (Module terms $ toUnfoldable contents)
+  _ <- dissolveTokens.symbol "Module"
+  name <- between (char '\'') (char '\'') (fromCharArray <$> (many $ satisfy (\c -> c /= '\''))) <|> arbitrary
+  terms <- List.toUnfoldable <$> (manyTill arbitrary $ char '\n')
+  dissolveTokens.whiteSpace
+  contents <- many1Till modulePart $ dissolveTokens.symbol "EndModule"
+  pure (Module name terms $ toUnfoldable contents)
 
 layerFrequency = dissolveTokens.symbol "Frequency" *> (LayerFrequency <$> dissolveTokens.integer)
 
@@ -377,11 +381,11 @@ layerPart = layerFrequency <|> module_
 popOnLayer :: Array LayerPart -> Json -> Json
 popOnLayer xs s = foldl go s xs
   where
-  go s (Module terms parts) = updateArray "modules" (\c -> fromArray $ flip snoc (writeModule terms parts) c) s
+  go s (Module name terms parts) = updateArray "modules" (\c -> fromArray $ flip snoc (writeModule name terms parts) c) s
 
   go s (LayerFrequency x) = "frequency" := x ~> s
 
-writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
+writeModule name terms = foldl go ("name" := name ~> "names" := terms ~> jsonEmptyObject)
   where
   go :: Json -> ModulePart -> Json
   go s (Configuration x) = "configuration" := x ~> s
@@ -568,13 +572,7 @@ writeModule terms = foldl go ("names" := terms ~> jsonEmptyObject)
 xmlOnLayer :: LayerPart -> XmlNode -> XmlNode
 xmlOnLayer (LayerFrequency x) s = ("frequency" ::= x) s
 
-xmlOnLayer (Module names terms) s =
-  let
-    name = maybe "undefined" identity $ head names
-
-    ts = maybe [] identity $ tail names
-  in
-    (addTerms "names" ts ::=> xmlActOn name (map xmlModule terms)) ::=> s
+xmlOnLayer (Module name ts terms) s = (addTerms "names" ts ::=> xmlActOn name (map xmlModule terms)) ::=> s
 
 xmlModule :: ModulePart -> XmlNode -> XmlNode
 xmlModule (Configuration x) = "configuration" ::= x
