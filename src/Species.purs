@@ -13,7 +13,6 @@ import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
 import Text.Parsing.Parser.Combinators (optionMaybe, (<?>))
-import Text.Parsing.Parser.String (char)
 
 data SpeciesPart
   = Atom Int String Number Number Number String (Maybe Number)
@@ -174,34 +173,30 @@ writeTorsion i j k l ref =
 xmlOnSpecies :: SpeciesPart -> XmlNode -> XmlNode
 xmlOnSpecies (Forcefield name) s = ("forcefield" ::= name) s
 
-xmlOnSpecies (Bond i j ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) $ xmlEmptyNode "bond") ::=> s
+xmlOnSpecies (Bond i j ref) s = xmlActOn "bond" [ xmlRef ref, "i" ::= i, "j" ::= j ] ::=> s
 
-xmlOnSpecies (Angle i j k ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) <<< ("k" ::= k) $ xmlEmptyNode "angle") ::=> s
+xmlOnSpecies (Angle i j k ref) s = xmlActOn "angle" [ xmlRef ref, "i" ::= i, "j" ::= j, "k" ::= k ] ::=> s
 
-xmlOnSpecies (Torsion i j k l ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) <<< ("k" ::= k) <<< ("l" ::= l) $ xmlEmptyNode "torsion") ::=> s
+xmlOnSpecies (Torsion i j k l ref) s = xmlActOn "torsion" [ xmlRef ref, "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] ::=> s
 
-xmlOnSpecies (Improper i j k l ref) s = (xmlRef ref <<< ("i" ::= i) <<< ("j" ::= j) <<< ("k" ::= k) <<< ("l" ::= l) $ xmlEmptyNode "angle") ::=> s
+xmlOnSpecies (Improper i j k l ref) s = xmlActOn "improper" [ xmlRef ref, "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] ::=> s
 
-xmlOnSpecies (BondType i j name) s = (("name" ::= name) <<< ("i" ::= i) <<< ("j" ::= j) $ xmlEmptyNode "bondType") ::=> s
+xmlOnSpecies (BondType i j name) s = xmlActOn "bondType" [ "name" ::= name, "i" ::= i, "j" ::= j ] ::=> s
 
-xmlOnSpecies (Atom index element x y z cls charge) s = (("index" ::= index) <<< ("element" ::= element) <<< ("x" ::= x) <<< ("y" ::= y) <<< ("z" ::= z) <<< ("class" ::= cls) <<< ("charge" ::=? charge) $ xmlEmptyNode "atom") ::=> s
+xmlOnSpecies (Atom index element x y z cls charge) s = xmlActOn "atom" [ "index" ::= index, "element" ::= element, "x" ::= x, "y" ::= y, "z" ::= z, "class" ::= cls, "charge" ::=? charge ] ::=> s
 
-xmlOnSpecies (Isotopologue xs) s = (foldl go (xmlEmptyNode "Isotopolgue") xs) ::=> s
-  where
-  go c x = ("value" ::= x $ xmlEmptyNode "term") ::=> c
+xmlOnSpecies (Isotopologue xs) s = addTerms "isotopologue" xs ::=> s
 
-xmlOnSpecies (Site name vs) s = (go vs <<< ("name" ::= name) $ (xmlEmptyNode "Site")) ::=> s
+xmlOnSpecies (Site name vs) s = xmlActOn "site" [ "name" ::= name, go vs ] ::=> s
   where
   go xs s = foldl go' s xs
 
-  go' c (Origin ns) = (foldl go'' (xmlEmptyNode "origin") ns) ::=> c
+  go' c (Origin ns) = addTerms "origin" ns ::=> c
 
-  go' c (XAxis ns) = (foldl go'' (xmlEmptyNode "xAxis") ns) ::=> c
+  go' c (XAxis ns) = addTerms "xAxis" ns ::=> c
 
-  go' c (YAxis ns) = (foldl go'' (xmlEmptyNode "yAxis") ns) ::=> c
+  go' c (YAxis ns) = addTerms "yAxis" ns ::=> c
 
   go' c (OriginMassWeighted x) = ("originMassWeighted" ::= x) c
-
-  go'' c n = (("value" ::= n) $ xmlEmptyNode "term") ::=> c
 
 xmlOnSpecies Noop s = s

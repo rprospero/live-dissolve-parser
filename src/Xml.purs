@@ -64,3 +64,13 @@ encodeAttrs :: M.Map String String -> String
 encodeAttrs as = if null as then "" else foldlWithIndex go "" as
   where
   go k s v = s <> " " <> k <> "=\"" <> v <> "\""
+
+addTerms :: forall a. ToAttr a => String -> Array a -> XmlNode
+addTerms name = A.foldl go (xmlEmptyNode name)
+  where
+  go s x = (("value" ::= x) $ xmlEmptyNode "term") ::=> s
+
+xmlActOn :: String -> Array (XmlNode -> XmlNode) -> XmlNode
+xmlActOn name fs = A.foldl go (xmlEmptyNode name) fs
+  where
+  go s f = f s

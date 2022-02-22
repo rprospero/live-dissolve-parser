@@ -45,7 +45,7 @@ instance encodeDissolve :: EncodeJson Dissolve where
 
 instance toXmlDissolve :: ToXml Dissolve where
   toXml (Dissolve master config layer pair species) =
-    flip execState (xmlEmptyNode "Dissolve")
+    flip execState (xmlEmptyNode "dissolve")
       $ do
           modify (xmlSpecies species)
 
