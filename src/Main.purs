@@ -18,7 +18,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Text.Parsing.Parser (runParser)
-import Xml (toXml, xmlEncode)
+import Xml (fullXmlEncode, toXml, xmlEncode)
 
 type State
   = Either String (Tuple String String)
@@ -41,7 +41,10 @@ component =
   render ∷ ∀ t0. State → HH.HTML t0 String
   render s =
     HH.div [ HP.class_ $ H.ClassName "master" ]
-      [ HH.div_ [ HH.textarea [ HP.id "source", HE.onValueInput identity ] ]
+      [ HH.div_
+          [ HH.label [ HP.for "source" ] [ HH.text "Dissolve Input File" ]
+          , HH.textarea [ HP.id "source", HE.onValueInput identity ]
+          ]
       , HH.div_
           [ case s of
               Left x -> HH.div_ [ HH.text (show x) ]
@@ -57,6 +60,6 @@ component =
     case runParser s dissolve of
       Left x -> put (Left $ show x)
       Right x -> do
-        xml <- liftEffect $ createObjectURL (fromString (xmlEncode $ toXml $ asDissolve x) applicationJSON)
-        json <- liftEffect $ createObjectURL (fromString (stringify $ encodeJson $ asDissolve x) applicationXML)
+        xml <- liftEffect $ createObjectURL (fromString (fullXmlEncode $ toXml $ asDissolve x) applicationXML)
+        json <- liftEffect $ createObjectURL (fromString (stringify $ encodeJson $ asDissolve x) applicationJSON)
         put (Right (Tuple xml json))

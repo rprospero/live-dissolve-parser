@@ -55,6 +55,9 @@ infix 5 addChild as ::=>
 class ToXml a where
   toXml :: a -> XmlNode
 
+fullXmlEncode :: XmlNode -> String
+fullXmlEncode x = "<?xml version=\"1.0\"?>\n" <> xmlEncode x
+
 xmlEncode :: XmlNode -> String
 xmlEncode (XmlNode name as []) = "<" <> name <> " " <> encodeAttrs as <> " />"
 
