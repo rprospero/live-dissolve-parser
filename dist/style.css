@@ -5,31 +5,6 @@ html {
     --info: blue;
 }
 
-body {
-    /* font-size: 4vh; */
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: Dyslexic;
-}
-
-article {
-    margin: auto;
-    width: min(100%, 30em);
-}
-
-
-.master {
-    display: grid;
-    grid-template-columns: repeat(3, 30vw);
-    height: 100vh;
-}
-
-textarea {
-    min-width: 30vw;
-    background-color: var(--bg);
-    color: var(--text);
-}
-
 h1 {
     text-align: center;
 }

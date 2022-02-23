@@ -1,12 +1,16 @@
 module Main where
 
+import Data.Tuple
 import Prelude
+import Web.File.Blob
+import Web.File.Url
 import Data.Argonaut.Core (stringify)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
+import Data.MediaType.Common (applicationJSON, applicationXML)
 import Dissolve (asDissolve, dissolve)
 import Effect (Effect)
-import Halogen (Component, put)
+import Halogen (liftEffect, put)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -16,13 +20,15 @@ import Halogen.VDom.Driver (runUI)
 import Text.Parsing.Parser (runParser)
 import Xml (toXml, xmlEncode)
 
+type State
+  = Either String (Tuple String String)
+
 main :: Effect Unit
 main = do
   HA.runHalogenAff do
     body ← HA.awaitBody
     runUI component unit body
 
-component :: forall t59 t60 t75 t78. Component t75 t78 t59 t60
 component =
   H.mkComponent
     { initialState
@@ -30,27 +36,25 @@ component =
     , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
     }
   where
-  initialState _ = ""
+  initialState _ = Left "No Input"
 
-  render ∷ ∀ t0. String → HH.HTML t0 String
+  render ∷ ∀ t0. State → HH.HTML t0 String
   render s =
-    let
-      parsed = runParser s dissolve
-    in
-      HH.div [ HP.class_ $ H.ClassName "master" ]
-        [ case parsed of
-            Left x -> HH.text (show x)
-            Right x -> HH.text (xmlEncode $ toXml $ asDissolve x)
-        , HH.textarea [ HP.id "source", HE.onValueInput identity, HP.value s ]
-        , case parsed of
-            Left x -> HH.text (show x)
-            Right x -> HH.text (stringify $ encodeJson $ asDissolve x)
-        ]
+    HH.div [ HP.class_ $ H.ClassName "master" ]
+      [ HH.textarea [ HP.id "source", HE.onValueInput identity ]
+      , case s of
+          Left x -> HH.text (show x)
+          Right (Tuple xml json) ->
+            HH.ul_
+              [ HH.li_ [ HH.a [ HP.href xml ] [ HH.text "Xml" ] ]
+              , HH.li_ [ HH.a [ HP.href json ] [ HH.text "Json" ] ]
+              ]
+      ]
 
-  handleAction = put
-
--- input ← loadDissolveFile $ maybe "examples/energyforce3/py5-ntf2.txt" identity $ args !! 2
--- case input of
---   Left x -> log $ show x
---   Right x -> log $ stringify $ encodeJson $ asDissolve x
--- Right x -> log $ xmlEncode $ toXml $ asDissolve x
+  handleAction s = do
+    case runParser s dissolve of
+      Left x -> put (Left $ show x)
+      Right x -> do
+        xml <- liftEffect $ createObjectURL (fromString (xmlEncode $ toXml $ asDissolve x) applicationJSON)
+        json <- liftEffect $ createObjectURL (fromString (stringify $ encodeJson $ asDissolve x) applicationXML)
+        put (Right (Tuple xml json))

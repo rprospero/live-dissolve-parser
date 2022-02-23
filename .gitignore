@@ -12,3 +12,4 @@
 *.yaml
 *.json
 *.xml
+/dist/app.js

@@ -27,6 +27,7 @@ to generate this file without the comments in this block.
   , "integers"
   , "lists"
   , "maybe"
+  , "media-types"
   , "node-buffer"
   , "node-fs-aff"
   , "node-process"
@@ -38,6 +39,7 @@ to generate this file without the comments in this block.
   , "strings"
   , "transformers"
   , "tuples"
+  , "web-file"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
