@@ -41,7 +41,10 @@ component =
   render ∷ ∀ t0. State → HH.HTML t0 String
   render s =
     HH.div [ HP.class_ $ H.ClassName "master" ]
-      [ HH.div_ [ HH.textarea [ HP.id "source", HE.onValueInput identity ] ]
+      [ HH.div_
+          [ HH.label [ HP.for "source" ] [ HH.text "Dissolve Input File" ]
+          , HH.textarea [ HP.id "source", HE.onValueInput identity ]
+          ]
       , HH.div_
           [ case s of
               Left x -> HH.div_ [ HH.text (show x) ]
