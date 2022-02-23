@@ -5,6 +5,15 @@ html {
     --info: blue;
 }
 
+.master {
+    columns: 2 auto;
+}
+
 h1 {
     text-align: center;
+}
+
+textarea {
+    height: 95vh;
+    width: 100%;
 }

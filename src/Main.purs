@@ -41,14 +41,16 @@ component =
   render ∷ ∀ t0. State → HH.HTML t0 String
   render s =
     HH.div [ HP.class_ $ H.ClassName "master" ]
-      [ HH.textarea [ HP.id "source", HE.onValueInput identity ]
-      , case s of
-          Left x -> HH.text (show x)
-          Right (Tuple xml json) ->
-            HH.ul_
-              [ HH.li_ [ HH.a [ HP.href xml ] [ HH.text "Xml" ] ]
-              , HH.li_ [ HH.a [ HP.href json ] [ HH.text "Json" ] ]
-              ]
+      [ HH.div_ [ HH.textarea [ HP.id "source", HE.onValueInput identity ] ]
+      , HH.div_
+          [ case s of
+              Left x -> HH.div_ [ HH.text (show x) ]
+              Right (Tuple xml json) ->
+                HH.ul_
+                  [ HH.li_ [ HH.a [ HP.href xml ] [ HH.text "Xml" ] ]
+                  , HH.li_ [ HH.a [ HP.href json ] [ HH.text "Json" ] ]
+                  ]
+          ]
       ]
 
   handleAction s = do
