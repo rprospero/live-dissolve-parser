@@ -17,20 +17,16 @@ to generate this file without the comments in this block.
   , "argonaut-core"
   , "arrays"
   , "bifunctors"
-  , "console"
   , "control"
   , "effect"
   , "either"
   , "foldable-traversable"
   , "foreign-object"
-  , "halogen"
   , "integers"
   , "lists"
   , "maybe"
-  , "media-types"
   , "node-buffer"
   , "node-fs-aff"
-  , "node-process"
   , "ordered-collections"
   , "parsing"
   , "prelude"
@@ -40,8 +36,7 @@ to generate this file without the comments in this block.
   , "strings"
   , "transformers"
   , "tuples"
-  , "web-file"
   ]
-, packages = ./packages.dhall
+, packages = ../packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }

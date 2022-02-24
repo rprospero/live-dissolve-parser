@@ -1,13 +1,13 @@
 /bower_components/
 /node_modules/
 /.pulp-cache/
-/output/
+output/
 /generated-docs/
 /.psc-package/
 /.psc*
 /.purs*
 /.psa*
-/.spago
+.spago/
 *.toml
 *.yaml
 *.json

@@ -12,7 +12,7 @@ import Test.Spec.Runner (runSpec)
 
 parseTest name path =
   it name do
-    input <- loadDissolveFile $ "examples/" <> path <> "/" <> name <> ".txt"
+    input <- loadDissolveFile $ "../examples/" <> path <> "/" <> name <> ".txt"
     isRight input `shouldEqual` true
 
 main :: Effect Unit
