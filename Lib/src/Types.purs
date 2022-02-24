@@ -51,7 +51,7 @@ instance toXmlDissolve :: ToXml Dissolve where
       $ do
           xmlSpecies species
           _ <- modify (xmlLayer layer)
-          _ <- modify (xmlConfig config)
+          xmlConfig config
           xmlPair pair
           xmlMaster master
 
@@ -80,10 +80,10 @@ writeConfig xs s = "configuration" := foldl go jsonEmptyObject xs ~> s
   where
   go state (Tuple name xs) = name := (popOnConfig xs jsonEmptyObject) ~> state
 
-xmlConfig :: (Array (Tuple String (Array ConfigurationPart))) -> XmlNode -> XmlNode
-xmlConfig xs s = foldl go s xs
+xmlConfig :: (Array (Tuple String (Array ConfigurationPart))) -> State XmlNode Unit
+xmlConfig xs = for_ xs go
   where
-  go state (Tuple name ss) = (foldl (flip xmlOnConfig) ("name" ::= name $ xmlEmptyNode "configuration") ss) ::=> state
+  go (Tuple name cs) = onNewChild "configuration" $ onAttr "name" name *> for_ cs xmlOnConfig
 
 writePair :: Maybe (Array PairPart) -> Json -> Json
 writePair Nothing s = s

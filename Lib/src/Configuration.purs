@@ -5,15 +5,17 @@ import Data.Argonaut.Encode
 import Foreign.Object
 import Prelude hiding (between)
 import Util
+import Xml
 import Control.Alternative ((<|>))
+import Control.Monad.State (State)
 import Data.Array (cons, foldl, head, many, tail)
+import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (maybe)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
 import Text.Parsing.Parser.Combinators (between)
 import Text.Parsing.Parser.String (noneOf, skipSpaces, char, string)
-import Xml
 
 data ConfigurationPart
   = Generator (Array GeneratorPart)
@@ -173,46 +175,46 @@ writeParam ps s = foldl go s ps
     in
       name := tail ps ~> s
 
-xmlOnConfig :: ConfigurationPart -> XmlNode -> XmlNode
-xmlOnConfig (Temperature x) s = ("temperature" ::= x) s
+xmlOnConfig :: ConfigurationPart -> State XmlNode Unit
+xmlOnConfig (Temperature x) = onAttr "temperature" x
 
-xmlOnConfig (SizeFactor x) s = ("sizeFactor" ::= x) s
+xmlOnConfig (SizeFactor x) = onAttr "sizeFactor" x
 
-xmlOnConfig (CellDivisionLength x) s = ("cellDivisionLength" ::= x) s
+xmlOnConfig (CellDivisionLength x) = onAttr "cellDivisionLength" x
 
-xmlOnConfig (InputCoordinates name value) s = xmlActOn "inputCoordinates" [ "name" ::= name, "value" ::= value ] ::=> s
+xmlOnConfig (InputCoordinates name value) = onNewChild "inputCoordinates" $ onAttr "name" name *> onAttr "value" value
 
-xmlOnConfig (Generator xs) s = xmlActOn "generator" (map xmlGenerator xs) ::=> s
+xmlOnConfig (Generator xs) = onNewChild "generator" $ for_ xs xmlGenerator
 
-xmlGenerator :: GeneratorPart -> XmlNode -> XmlNode
-xmlGenerator (Add as) s = xmlActOn "add" (map go as) ::=> s
+xmlGenerator :: GeneratorPart -> State XmlNode Unit
+xmlGenerator (Add as) = onNewChild "add" $ for_ as go
   where
-  go (Density name units) c = xmlActOn "density" [ "name" ::= name, "units" ::= units ] ::=> c
+  go (Density name units) = onNewChild "density" $ onAttr "name" name *> onAttr "units" units
 
-  go (Population x) c = ("population" ::= x) c
+  go (Population x) = onAttr "population" x
 
-  go (Species x) c = ("species" ::= x) c
+  go (Species x) = onAttr "species" x
 
-  go (BoxAction x) c = ("boxAction" ::= x) c
+  go (BoxAction x) = onAttr "boxAction" x
 
-  go (Rotate x) c = ("rotate" ::= x) c
+  go (Rotate x) = onAttr "rotate" x
 
-  go (Positioning x) c = ("positioning" ::= x) c
+  go (Positioning x) = onAttr "positioning" x
 
-xmlGenerator (Box bs) s = xmlActOn "box" (map go bs) ::=> s
+xmlGenerator (Box bs) = onNewChild "box" $ for_ bs go
   where
-  go (Length x y z) c = xmlActOn "length" [ "x" ::= x, "y" ::= y, "z" ::= z ] ::=> c
+  go (Length x y z) = onNewChild "length" $ onAttr "x" x *> onAttr "y" y *> onAttr "z" z
 
-  go (Angles x y z) c = xmlActOn "angles" [ "x" ::= x, "y" ::= y, "z" ::= z ] ::=> c
+  go (Angles x y z) = onNewChild "angles" $ onAttr "x" x *> onAttr "y" y *> onAttr "z" z
 
-  go (NonPeriodic x) c = ("nonPeriodic" ::= x) c
+  go (NonPeriodic x) = onAttr "nonPeriodic" x
 
-xmlGenerator (Parameters ps) s = xmlActOn "parameters" (map go ps) ::=> s
+xmlGenerator (Parameters ps) = for_ ps go
   where
-  go (Param ps) c =
+  go (Param ps) =
     let
       name = maybe "undefined" identity $ head ps
 
       ts = maybe [] identity $ tail ps
     in
-      ("name" ::= name $ (addTerms "parameter" ts)) ::=> c
+      onNewChild "parameters" $ onAttr "name" name *> for_ ts (onNewChild "term" <<< onAttr "value")
