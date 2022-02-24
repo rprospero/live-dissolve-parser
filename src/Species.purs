@@ -1,5 +1,6 @@
 module Species where
 
+import Control.Monad.State
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Force
@@ -9,6 +10,7 @@ import Util
 import Xml
 import Control.Alternative ((<|>))
 import Data.Array (cons, foldl, many, snoc)
+import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
@@ -170,33 +172,31 @@ writeTorsion i j k l ref =
     := i
     ~> writeRef ref jsonEmptyObject
 
-xmlOnSpecies :: SpeciesPart -> XmlNode -> XmlNode
-xmlOnSpecies (Forcefield name) s = ("forcefield" ::= name) s
+xmlOnSpecies :: SpeciesPart -> State XmlNode Unit
+xmlOnSpecies (Forcefield name) = onAttr "forcefield" name
 
-xmlOnSpecies (Bond i j ref) s = xmlActOn "bond" [ xmlRef ref, "i" ::= i, "j" ::= j ] ::=> s
+xmlOnSpecies (Bond i j ref) = onNewChild "bond" $ onAttr "i" i *> onAttr "j" j *> xmlRef ref
 
-xmlOnSpecies (Angle i j k ref) s = xmlActOn "angle" [ xmlRef ref, "i" ::= i, "j" ::= j, "k" ::= k ] ::=> s
+xmlOnSpecies (Angle i j k ref) = onNewChild "angle" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k *> xmlRef ref
 
-xmlOnSpecies (Torsion i j k l ref) s = xmlActOn "torsion" [ xmlRef ref, "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] ::=> s
+xmlOnSpecies (Torsion i j k l ref) = onNewChild "torsion" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k *> onAttr "l" l *> xmlRef ref
 
-xmlOnSpecies (Improper i j k l ref) s = xmlActOn "improper" [ xmlRef ref, "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] ::=> s
+xmlOnSpecies (Improper i j k l ref) = onNewChild "improper" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k *> onAttr "l" l *> xmlRef ref
 
-xmlOnSpecies (BondType i j name) s = xmlActOn "bondType" [ "name" ::= name, "i" ::= i, "j" ::= j ] ::=> s
+xmlOnSpecies (BondType i j name) = onNewChild "bondType" $ onAttr "i" i *> onAttr "j" j *> onAttr "name" name
 
-xmlOnSpecies (Atom index element x y z cls charge) s = xmlActOn "atom" [ "index" ::= index, "element" ::= element, "x" ::= x, "y" ::= y, "z" ::= z, "class" ::= cls, "charge" ::=? charge ] ::=> s
+xmlOnSpecies (Atom index element x y z cls charge) = onNewChild "atom" $ onAttr "index" index *> onAttr "element" element *> onAttr "x" x *> onAttr "y" y *> onAttr "z" z *> onAttr "class" cls *> onAttrMay "charge" charge
 
-xmlOnSpecies (Isotopologue xs) s = addTerms "isotopologue" xs ::=> s
+xmlOnSpecies (Isotopologue xs) = onNewChild "isotopologue" $ for_ xs (onNewChild "term" <<< onAttr "value")
 
-xmlOnSpecies (Site name vs) s = xmlActOn "site" [ "name" ::= name, go vs ] ::=> s
+xmlOnSpecies (Site name vs) = onNewChild "site" $ onAttr "name" name *> for_ vs go
   where
-  go xs s = foldl go' s xs
+  go (Origin ns) = onNewChild "origin" $ for_ ns (onNewChild "term" <<< onAttr "value")
 
-  go' c (Origin ns) = addTerms "origin" ns ::=> c
+  go (XAxis ns) = onNewChild "xAxis" $ for_ ns (onNewChild "term" <<< onAttr "value")
 
-  go' c (XAxis ns) = addTerms "xAxis" ns ::=> c
+  go (YAxis ns) = onNewChild "yAxis" $ for_ ns (onNewChild "term" <<< onAttr "value")
 
-  go' c (YAxis ns) = addTerms "yAxis" ns ::=> c
+  go (OriginMassWeighted x) = onAttr "originMassWeighted" x
 
-  go' c (OriginMassWeighted x) = ("originMassWeighted" ::= x) c
-
-xmlOnSpecies Noop s = s
+xmlOnSpecies Noop = pure unit

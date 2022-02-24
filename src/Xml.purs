@@ -1,10 +1,15 @@
 module Xml where
 
+import Data.Lens
 import Prelude
+import Control.Monad.State (class MonadState, State, execState, get, modify, put)
 import Data.Array as A
 import Data.Foldable (null)
 import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Generic.Rep (class Generic)
+import Data.Lens.At (at)
+import Data.Lens.Index (ix)
+import Data.Lens.Zoom (zoom)
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
@@ -19,6 +24,15 @@ instance showXmlNode :: Show XmlNode where
 
 xmlEmptyNode :: String -> XmlNode
 xmlEmptyNode name = XmlNode name M.empty []
+
+xmlName :: Lens' XmlNode String
+xmlName = lens (\(XmlNode n _ _) -> n) (\(XmlNode _ m xs) n -> XmlNode n m xs)
+
+xmlAttr :: Lens' XmlNode (M.Map String String)
+xmlAttr = lens (\(XmlNode _ m _) -> m) (\(XmlNode n _ xs) m -> XmlNode n m xs)
+
+xmlChildren :: Lens' XmlNode (Array XmlNode)
+xmlChildren = lens (\(XmlNode _ _ xs) -> xs) (\(XmlNode n m _) xs -> XmlNode n m xs)
 
 class ToAttr a where
   toAttr :: a -> String
@@ -36,7 +50,7 @@ instance toArrtBoolean :: ToAttr Boolean where
   toAttr = show
 
 attr :: forall a. ToAttr a => String -> a -> (XmlNode -> XmlNode)
-attr key value (XmlNode name as cs) = XmlNode name (M.insert key (toAttr value) as) cs
+attr key value = set (xmlAttr <<< at key) $ pure (toAttr value)
 
 infix 5 attr as ::=
 
@@ -48,7 +62,7 @@ mayAttr key (Just value) (XmlNode name as cs) = XmlNode name (M.insert key (toAt
 infix 5 mayAttr as ::=?
 
 addChild :: XmlNode -> XmlNode -> XmlNode
-addChild child (XmlNode name as cs) = XmlNode name as (cs `A.snoc` child)
+addChild child = over xmlChildren (flip A.snoc child) -- XmlNode name as (cs `A.snoc` child)
 
 infix 5 addChild as ::=>
 
@@ -77,3 +91,18 @@ xmlActOn :: String -> Array (XmlNode -> XmlNode) -> XmlNode
 xmlActOn name fs = A.foldl go (xmlEmptyNode name) fs
   where
   go s f = f s
+
+onNewChild :: String -> State XmlNode Unit -> State XmlNode Unit
+onNewChild name act =
+  zoom xmlChildren do
+    len <- A.length <$> get
+    _ <- modify (flip A.snoc $ xmlEmptyNode name) -- xmlActOn "master" (map xmlOnMaster xs))
+    zoom (ix len) act
+
+onAttr :: forall m a. MonadState XmlNode m => ToAttr a => String -> a -> m Unit
+onAttr name x = (xmlAttr <<< at name) .= pure (toAttr x)
+
+onAttrMay :: forall m a. MonadState XmlNode m => ToAttr a => String -> Maybe a -> m Unit
+onAttrMay name Nothing = pure unit
+
+onAttrMay name (Just x) = (xmlAttr <<< at name) .= pure (toAttr x)

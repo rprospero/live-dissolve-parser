@@ -2,11 +2,15 @@ module Force where
 
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
+import Data.Lens
+import Data.Lens.At
 import Foreign.Object
 import Prelude
 import Xml
 import Control.Alternative ((<|>))
+import Control.Monad.State (State)
 import Data.Array (foldl)
+import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -121,29 +125,23 @@ writeRef (Just (Ref name)) s =
     := name
     ~> s
 
-xmlRef :: (Maybe ForceInfo) -> XmlNode -> XmlNode
-xmlRef Nothing s = s
+xmlRef :: (Maybe ForceInfo) -> State XmlNode Unit
+xmlRef Nothing = pure unit
 
-xmlRef (Just (Ref name)) s = ("master" ::= name $ xmlEmptyNode "reference") ::=> s
+xmlRef (Just None) = pure unit
 
-xmlRef (Just (Harmonic k eq)) s = (("eq" ::= eq) <<< ("k" ::= k) $ xmlEmptyNode "harmonic") ::=> s
+xmlRef (Just (Ref name)) = onNewChild "reference" $ onAttr "master" name
 
-xmlRef (Just (Cos i j k l)) s = (("l" ::= l) <<< ("k" ::= k) <<< ("j" ::= j) <<< ("i" ::= i) $ xmlEmptyNode "cos") ::=> s
+xmlRef (Just (Harmonic k eq)) = onNewChild "harmonic" $ onAttr "eq" eq *> onAttr "k" k
 
-xmlRef (Just (Cos3 i j k)) s = (("k" ::= k) <<< ("j" ::= j) <<< ("i" ::= i) $ xmlEmptyNode "cos3") ::=> s
+xmlRef (Just (Cos i j k l)) = onNewChild "cos" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k *> onAttr "l" l
 
-xmlRef (Just (LJ a b)) s = (("b" ::= b) <<< ("a" ::= a) $ xmlEmptyNode "lj") ::=> s
+xmlRef (Just (Cos3 i j k)) = onNewChild "cos3" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k
 
-xmlRef (Just (CosN cs)) s = (foldl go (xmlEmptyNode "CosN") cs) ::=> s
-  where
-  go state term = (("value" ::= term) $ xmlEmptyNode "term") ::=> state
+xmlRef (Just (LJ a b)) = onNewChild "lj" $ onAttr "a" a *> onAttr "b" b
 
-xmlRef (Just (CosNC cs)) s = (foldl go (xmlEmptyNode "CosNC") cs) ::=> s
-  where
-  go state term = (("value" ::= term) $ xmlEmptyNode "term") ::=> state
+xmlRef (Just (CosN cs)) = onNewChild "CosN" $ for_ cs (onNewChild "term" <<< onAttr "value")
 
-xmlRef (Just (LJGeometric cs)) s = (foldl go (xmlEmptyNode "LJGeometric") cs) ::=> s
-  where
-  go state term = (("value" ::= term) $ xmlEmptyNode "term") ::=> state
+xmlRef (Just (CosNC cs)) = onNewChild "CosNC" $ for_ cs (onNewChild "term" <<< onAttr "value")
 
-xmlRef (Just None) s = s
+xmlRef (Just (LJGeometric cs)) = onNewChild "LJGeometric" $ for_ cs (onNewChild "term" <<< onAttr "value")

@@ -3,6 +3,7 @@ module Types where
 import Configuration
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
+import Data.Lens
 import Foreign.Object
 import Layer
 import Master
@@ -10,10 +11,11 @@ import PairPotential
 import Prelude
 import Species
 import Xml
-import Control.Monad.State (execState, modify)
-import Data.Array (catMaybes, foldl, head, tail)
+import Control.Monad.State (State, execState, modify)
+import Data.Array (foldl)
+import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
 
@@ -47,11 +49,11 @@ instance toXmlDissolve :: ToXml Dissolve where
   toXml (Dissolve master config layer pair species) =
     flip execState (xmlEmptyNode "dissolve")
       $ do
-          _ <- modify (xmlSpecies species)
+          xmlSpecies species
           _ <- modify (xmlLayer layer)
           _ <- modify (xmlConfig config)
-          _ <- modify (xmlPair pair)
-          modify (xmlMaster master)
+          xmlPair pair
+          xmlMaster master
 
 writeLayer :: (Array (Tuple String (Array LayerPart))) -> Json -> Json
 writeLayer xs s = "layer" := foldl go jsonEmptyObject xs ~> s
@@ -68,10 +70,10 @@ writeSpecies xs s = "species" := foldl go jsonEmptyObject xs ~> s
   where
   go state (Tuple name xs) = name := (popOnSpecies xs jsonEmptyObject) ~> state
 
-xmlSpecies :: (Array (Tuple String (Array SpeciesPart))) -> XmlNode -> XmlNode
-xmlSpecies xs s = foldl go s xs
+xmlSpecies :: (Array (Tuple String (Array SpeciesPart))) -> State XmlNode Unit
+xmlSpecies xs = for_ xs go
   where
-  go state (Tuple name ss) = (foldl (flip xmlOnSpecies) ("name" ::= name $ xmlEmptyNode "species") ss) ::=> state
+  go (Tuple name ss) = onNewChild "species" $ onAttr "name" name *> for_ ss xmlOnSpecies
 
 writeConfig :: (Array (Tuple String (Array ConfigurationPart))) -> Json -> Json
 writeConfig xs s = "configuration" := foldl go jsonEmptyObject xs ~> s
@@ -88,16 +90,15 @@ writePair Nothing s = s
 
 writePair (Just xs) s = "PairPotentials" := (popOnPair xs jsonEmptyObject) ~> s
 
-xmlPair :: (Maybe (Array PairPart)) -> XmlNode -> XmlNode
-xmlPair Nothing s = s
+xmlPair Nothing = pure unit
 
-xmlPair (Just xs) s = xmlActOn "pairPotentials" (map xmlOnPair xs) ::=> s
+xmlPair (Just xs) = onNewChild "pairPotentials" $ for_ xs xmlOnPair
 
 writeMaster (Just xs) s = "master" := (popOnMaster xs jsonEmptyObject) ~> s
 
 writeMaster Nothing s = s
 
-xmlMaster :: (Maybe (Array MasterPart)) -> XmlNode -> XmlNode
-xmlMaster Nothing s = s
+xmlMaster :: (Maybe (Array MasterPart)) -> State XmlNode Unit
+xmlMaster Nothing = pure unit
 
-xmlMaster (Just xs) s = xmlActOn "master" (map xmlOnMaster xs) ::=> s
+xmlMaster (Just xs) = onNewChild "master" $ for_ xs xmlOnMaster

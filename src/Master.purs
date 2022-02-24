@@ -1,8 +1,10 @@
 module Master where
 
+import Control.Monad.State
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Data.Array
+import Data.Lens
 import Force
 import Prelude
 import Control.Alternative ((<|>))
@@ -48,11 +50,12 @@ popOnMaster xs s = foldl go s xs
 
 writeMaster name ref = "name" := name ~> writeRef ref jsonEmptyObject
 
-xmlOnMaster :: MasterPart -> XmlNode -> XmlNode
-xmlOnMaster (Bond name ref) s = xmlActOn "bond" [ "name" ::= name, xmlRef ref ] ::=> s
+xmlOnMaster :: MasterPart -> State XmlNode Unit
+-- xmlOnMaster (Bond name ref) = xmlActOn "bond" [ "name" ::= name, xmlRef ref ] ::=> s
+xmlOnMaster (Bond name ref) = onNewChild "bond" $ (xmlName .= name) *> xmlRef ref
 
-xmlOnMaster (Angle name ref) s = xmlActOn "angle" [ "name" ::= name, xmlRef ref ] ::=> s
+xmlOnMaster (Angle name ref) = onNewChild "angle" $ (xmlName .= name) *> xmlRef ref
 
-xmlOnMaster (Torsion name ref) s = xmlActOn "torsion" [ "name" ::= name, xmlRef ref ] ::=> s
+xmlOnMaster (Torsion name ref) = onNewChild "torsion" $ (xmlName .= name) *> xmlRef ref
 
-xmlOnMaster (Improper name ref) s = xmlActOn "improper" [ "name" ::= name, xmlRef ref ] ::=> s
+xmlOnMaster (Improper name ref) = onNewChild "improper" $ (xmlName .= name) *> xmlRef ref

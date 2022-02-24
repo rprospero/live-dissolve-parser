@@ -34,6 +34,7 @@ to generate this file without the comments in this block.
   , "ordered-collections"
   , "parsing"
   , "prelude"
+  , "profunctor-lenses"
   , "psci-support"
   , "spec"
   , "strings"

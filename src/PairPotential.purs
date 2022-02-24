@@ -1,5 +1,6 @@
 module PairPotential where
 
+import Control.Monad.State
 import Data.Argonaut.Core
 import Data.Argonaut.Encode
 import Force
@@ -68,19 +69,19 @@ popOnPair xs s = foldl go s xs
     where
     value = "element" := elem ~> "charge" := charge ~> writeRef (pure ref) jsonEmptyObject
 
-xmlOnPair :: PairPart -> XmlNode -> XmlNode
-xmlOnPair (Range x) s = ("range" ::= x) s
+xmlOnPair :: PairPart -> State XmlNode Unit
+xmlOnPair (Range x) = onAttr "range" x
 
-xmlOnPair (Delta x) s = ("delta" ::= x) s
+xmlOnPair (Delta x) = onAttr "delta" x
 
-xmlOnPair (IncludeCoulomb x) s = ("includeCoulomb" ::= x) s
+xmlOnPair (IncludeCoulomb x) = onAttr "includeCoulomb" x
 
-xmlOnPair (CoulombTruncation x) s = ("coulombTruncation" ::= x) s
+xmlOnPair (CoulombTruncation x) = onAttr "coulombTruncation" x
 
-xmlOnPair (ShortRangeTruncation x) s = ("shortRangeTruncation" ::= x) s
+xmlOnPair (ShortRangeTruncation x) = onAttr "shortRangeTruncation" x
 
-xmlOnPair (ManualChargeSource x) s = ("manualChargeSource" ::= x) s
+xmlOnPair (ManualChargeSource x) = onAttr "manualChargeSource" x
 
-xmlOnPair (ForceChargeSource x) s = ("forceChargeSource" ::= x) s
+xmlOnPair (ForceChargeSource x) = onAttr "forceChargeSource" x
 
-xmlOnPair (Parameters name elem charge ref) s = xmlActOn "parameters" [ "name" ::= name, "element" ::= elem, "charge" ::= charge, xmlRef $ pure ref ] ::=> s
+xmlOnPair (Parameters name elem charge ref) = onNewChild "parameters" $ onAttr "name" name *> onAttr "element" elem *> onAttr "charge" charge *> xmlRef (pure ref)
