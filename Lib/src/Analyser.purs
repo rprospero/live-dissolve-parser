@@ -5,8 +5,10 @@ import Data.Argonaut.Encode
 import Prelude
 import Xml
 import Control.Alternative ((<|>))
+import Control.Monad.State (State)
 import Data.Array (foldl, many)
 import Data.Either (Either)
+import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.List.NonEmpty (toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -234,71 +236,71 @@ writeAnalyser = foldl go jsonEmptyObject
 
   go s (Value x) = "value" := x ~> s
 
-xmlAnalyser :: AnalyserPart -> XmlNode -> XmlNode
-xmlAnalyser (Site xs) = addChild $ addTerms "site" xs
+xmlAnalyser :: AnalyserPart -> State XmlNode Unit
+xmlAnalyser (Site xs) = onNewChild "site" $ for_ xs (onNewChild "term" <<< onAttr "value")
 
-xmlAnalyser (Select name parts) = addChild $ xmlActOn "select" $ [ "name" ::= name ] <> map xmlAnalyser parts
+xmlAnalyser (Select name parts) = onNewChild "select" $ onAttr "name" name *> for_ parts xmlAnalyser
 
-xmlAnalyser (ForEach parts) = addChild $ xmlActOn "forEach" $ map xmlAnalyser parts
+xmlAnalyser (ForEach parts) = onNewChild "forEach" $ for_ parts xmlAnalyser
 
-xmlAnalyser (ExcludeSameMolecule x) = "excludeSameMolecule" ::= x
+xmlAnalyser (ExcludeSameMolecule x) = onAttr "excludeSameMolecule" x
 
-xmlAnalyser (CalculateDistance name parts) = addChild $ xmlActOn "calculateDistance" $ [ "name" ::= name ] <> map xmlAnalyser parts
+xmlAnalyser (CalculateDistance name parts) = onNewChild "calculateDistance" $ onAttr "name" name *> for_ parts xmlAnalyser
 
-xmlAnalyser (CalculateAngle name parts) = addChild $ xmlActOn "calculateAngle" $ [ "name" ::= name ] <> map xmlAnalyser parts
+xmlAnalyser (CalculateAngle name parts) = onNewChild "calculateAngle" $ onAttr "name" name *> for_ parts xmlAnalyser
 
-xmlAnalyser (I x) = "i" ::= x
+xmlAnalyser (I x) = onAttr "i" x
 
-xmlAnalyser (J x) = "j" ::= x
+xmlAnalyser (J x) = onAttr "j" x
 
-xmlAnalyser (K x) = "k" ::= x
+xmlAnalyser (K x) = onAttr "k" x
 
-xmlAnalyser (L x) = "l" ::= x
+xmlAnalyser (L x) = onAttr "l" x
 
-xmlAnalyser (Collect1D name parts) = addChild $ xmlActOn "collect1D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+xmlAnalyser (Collect1D name parts) = onNewChild "collect1D" $ onAttr "name" name *> for_ parts xmlAnalyser
 
-xmlAnalyser (Collect2D name parts) = addChild $ xmlActOn "collect2D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+xmlAnalyser (Collect2D name parts) = onNewChild "collect2D" $ onAttr "name" name *> for_ parts xmlAnalyser
 
-xmlAnalyser (SubCollect parts) = addChild $ xmlActOn "subCollect" $ map xmlAnalyser parts
+xmlAnalyser (SubCollect parts) = onNewChild "subCollect" $ for_ parts xmlAnalyser
 
-xmlAnalyser (QuantityX x) = "quantityX" ::= x
+xmlAnalyser (QuantityX x) = onAttr "quantityX" x
 
-xmlAnalyser (QuantityY x) = "quantityY" ::= x
+xmlAnalyser (QuantityY x) = onAttr "quantityY" x
 
-xmlAnalyser (RangeX low high step) = addChild $ xmlActOn "rangeX" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+xmlAnalyser (RangeX low high step) = onNewChild "rangeX" $ onAttr "low" low *> onAttr "high" high *> onAttr "step" step
 
-xmlAnalyser (RangeY low high step) = addChild $ xmlActOn "rangeY" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+xmlAnalyser (RangeY low high step) = onNewChild "rangeY" $ onAttr "low" low *> onAttr "high" high *> onAttr "step" step
 
-xmlAnalyser (Process1D name parts) = addChild $ xmlActOn "process1D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+xmlAnalyser (Process1D name parts) = onNewChild "process1D" $ onAttr "name" name *> for_ parts xmlAnalyser
 
-xmlAnalyser (Process2D name parts) = addChild $ xmlActOn "process2D" $ [ "name" ::= name ] <> map xmlAnalyser parts
+xmlAnalyser (Process2D name parts) = onNewChild "process2D" $ onAttr "name" name *> for_ parts xmlAnalyser
 
-xmlAnalyser (SourceData x) = "sourceData" ::= x
+xmlAnalyser (SourceData x) = onAttr "sourceData" x
 
-xmlAnalyser (LabelValue x) = "labelValue" ::= x
+xmlAnalyser (LabelValue x) = onAttr "labelValue" x
 
-xmlAnalyser (LabelX x) = "labelX" ::= x
+xmlAnalyser (LabelX x) = onAttr "labelX" x
 
-xmlAnalyser (LabelY x) = "labelY" ::= x
+xmlAnalyser (LabelY x) = onAttr "labelY" x
 
-xmlAnalyser (Normalisation parts) = addChild $ xmlActOn "normalisation" $ map xmlAnalyser parts
+xmlAnalyser (Normalisation parts) = onNewChild "normalisation" $ for_ parts xmlAnalyser
 
-xmlAnalyser (OperateSitePopulationNormalise parts) = addChild $ xmlActOn "operateSitePopulationNormalise" $ map xmlAnalyser parts
+xmlAnalyser (OperateSitePopulationNormalise parts) = onNewChild "operateSitePopulationNormalise" $ for_ parts xmlAnalyser
 
-xmlAnalyser (OperateNumberDensityNormalise parts) = addChild $ xmlActOn "operateNumberDensityNormalise" $ map xmlAnalyser parts
+xmlAnalyser (OperateNumberDensityNormalise parts) = onNewChild "operateNumberDensityNormalise" $ for_ parts xmlAnalyser
 
-xmlAnalyser (OperateSphericalShellNormalise parts) = addChild $ xmlActOn "operateSphericalShellNormalise" $ map xmlAnalyser parts
+xmlAnalyser (OperateSphericalShellNormalise parts) = onNewChild "operateSphericalShellNormalise" $ for_ parts xmlAnalyser
 
-xmlAnalyser (DynamicSite parts) = addChild $ xmlActOn "dynamicSite" $ map xmlAnalyser parts
+xmlAnalyser (DynamicSite parts) = onNewChild "dynamicSite" $ for_ parts xmlAnalyser
 
-xmlAnalyser (OperateExpression parts) = addChild $ xmlActOn "operateExpression" $ map xmlAnalyser parts
+xmlAnalyser (OperateExpression parts) = onNewChild "operateExpression" $ for_ parts xmlAnalyser
 
-xmlAnalyser (OperateNormalise parts) = addChild $ xmlActOn "operateNormalise" $ map xmlAnalyser parts
+xmlAnalyser (OperateNormalise parts) = onNewChild "operateNormalise" $ for_ parts xmlAnalyser
 
-xmlAnalyser (Element x) = "element" ::= x
+xmlAnalyser (Element x) = onAttr "element" x
 
-xmlAnalyser (SameMoleculeAsSite x) = "sameMoleculeAsSite" ::= x
+xmlAnalyser (SameMoleculeAsSite x) = onAttr "sameMoleculeAsSite" x
 
-xmlAnalyser (Expression x) = "expression" ::= x
+xmlAnalyser (Expression x) = onAttr "expression" x
 
-xmlAnalyser (Value x) = "value" ::= x
+xmlAnalyser (Value x) = onAttr "value" x

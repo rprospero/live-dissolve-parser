@@ -52,10 +52,10 @@ writeMaster name ref = "name" := name ~> writeRef ref jsonEmptyObject
 
 xmlOnMaster :: MasterPart -> State XmlNode Unit
 -- xmlOnMaster (Bond name ref) = xmlActOn "bond" [ "name" ::= name, xmlRef ref ] ::=> s
-xmlOnMaster (Bond name ref) = onNewChild "bond" $ (xmlName .= name) *> xmlRef ref
+xmlOnMaster (Bond name ref) = onNewChild "bond" $ (onAttr "name" name) *> xmlRef ref
 
-xmlOnMaster (Angle name ref) = onNewChild "angle" $ (xmlName .= name) *> xmlRef ref
+xmlOnMaster (Angle name ref) = onNewChild "angle" $ (onAttr "name" name) *> xmlRef ref
 
-xmlOnMaster (Torsion name ref) = onNewChild "torsion" $ (xmlName .= name) *> xmlRef ref
+xmlOnMaster (Torsion name ref) = onNewChild "torsion" $ (onAttr "name" name) *> xmlRef ref
 
-xmlOnMaster (Improper name ref) = onNewChild "improper" $ (xmlName .= name) *> xmlRef ref
+xmlOnMaster (Improper name ref) = onNewChild "improper" $ (onAttr "name" name) *> xmlRef ref

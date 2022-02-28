@@ -8,8 +8,10 @@ import Prelude
 import Util
 import Xml
 import Control.Alternative ((<|>))
+import Control.Monad.State (State)
 import Data.Array (foldl, head, many, snoc, tail)
 import Data.Either (Either)
+import Data.Foldable (for_)
 import Data.Generic.Rep (class Generic)
 import Data.List as List
 import Data.List.NonEmpty (toUnfoldable)
@@ -579,189 +581,189 @@ writeData1D = foldl go jsonEmptyObject
 
   go s (XMin x) = "xMin" := x ~> s
 
-xmlOnLayer :: LayerPart -> XmlNode -> XmlNode
-xmlOnLayer (LayerFrequency x) s = ("frequency" ::= x) s
+xmlOnLayer :: LayerPart -> State XmlNode Unit
+xmlOnLayer (LayerFrequency x) = onAttr "frequency" x
 
-xmlOnLayer (Module name ts terms) s = (addTerms "names" ts ::=> xmlActOn name (map xmlModule terms)) ::=> s
+xmlOnLayer (Module name ts terms) = onNewChild name $ for_ ts (onNewChild "term" <<< onAttr "value") *> for_ terms xmlModule
 
-xmlModule :: ModulePart -> XmlNode -> XmlNode
-xmlModule (Configuration x) = "configuration" ::= x
+xmlModule :: ModulePart -> State XmlNode Unit
+xmlModule (Configuration x) = onAttr "configuration" x
 
-xmlModule (Frequency x) = "frequency" ::= x
+xmlModule (Frequency x) = onAttr "frequency" x
 
-xmlModule (Distance i j dist) = addChild $ xmlActOn "distance" [ "i" ::= i, "j" ::= j, "measure" ::= dist ]
+xmlModule (Distance i j dist) = onNewChild "distance" $ onAttr "i" i *> onAttr "j" j *> onAttr "measure" dist
 
-xmlModule (Format typ file) = addChild $ xmlActOn "format" [ "type" ::= typ, "file" ::= file ]
+xmlModule (Format typ file) = onNewChild "format" $ onAttr "type" typ *> onAttr "file" file
 
-xmlModule (BinWidth x) = "BinWidth" ::= x
+xmlModule (BinWidth x) = onAttr "BinWidth" x
 
-xmlModule (IntraBroadening x) = "IntraBroadening" ::= x
+xmlModule (IntraBroadening x) = onAttr "IntraBroadening" x
 
-xmlModule (Averaging x) = "Averaging" ::= x
+xmlModule (Averaging x) = onAttr "Averaging" x
 
-xmlModule (AveragingScheme x) = "AveragingScheme" ::= x
+xmlModule (AveragingScheme x) = onAttr "AveragingScheme" x
 
-xmlModule (Target x) = "Target" ::= x
+xmlModule (Target x) = onAttr "Target" x
 
-xmlModule (Data x) = "Data" ::= x
+xmlModule (Data x) = onAttr "Data" x
 
-xmlModule (SiteA name site Nothing) = addChild $ xmlActOn "siteA" [ "species" ::= name, "site" ::= site ]
+xmlModule (SiteA name site Nothing) = onNewChild "siteA" $ onAttr "species" name *> onAttr "site" site
 
-xmlModule (SiteA name site (Just (Tuple name2 site2))) = addChild $ xmlActOn "siteA" [ "species" ::= name, "site" ::= site, "species2" ::= name2, "site2" ::= site2 ]
+xmlModule (SiteA name site (Just (Tuple name2 site2))) = onNewChild "siteA" $ onAttr "species" name *> onAttr "site" site *> onAttr "species2" name2 *> onAttr "site2" site2
 
-xmlModule (SiteB name site Nothing) = addChild $ xmlActOn "siteB" [ "species" ::= name, "site" ::= site ]
+xmlModule (SiteB name site Nothing) = onNewChild "siteB" $ onAttr "species" name *> onAttr "site" site
 
-xmlModule (SiteB name site (Just (Tuple name2 site2))) = addChild $ xmlActOn "siteB" [ "species" ::= name, "site" ::= site, "species2" ::= name2, "site2" ::= site2 ]
+xmlModule (SiteB name site (Just (Tuple name2 site2))) = onNewChild "siteB" $ onAttr "species" name *> onAttr "site" site *> onAttr "species2" name2 *> onAttr "site2" site2
 
-xmlModule (AxisA x) = "axisA" ::= x
+xmlModule (AxisA x) = onAttr "axisA" x
 
-xmlModule (AxisB x) = "axisB" ::= x
+xmlModule (AxisB x) = onAttr "axisB" x
 
-xmlModule (Site xs) = addChild $ addTerms "site" xs
+xmlModule (Site xs) = onNewChild "site" $ for_ xs (onNewChild "term" <<< onAttr "value")
 
-xmlModule (DistanceRange x y z) = addChild $ xmlActOn "distanceRange" [ "x" ::= x, "y" ::= y, "z" ::= z ]
+xmlModule (DistanceRange x y z) = onNewChild "distanceRange" $ onAttr "x" x *> onAttr "y" y *> onAttr "z" z
 
-xmlModule (AngleRange x y z) = addChild $ xmlActOn "angleRange" [ "x" ::= x, "y" ::= y, "z" ::= z ]
+xmlModule (AngleRange x y z) = onNewChild "angleRange" $ onAttr "x" x *> onAttr "y" y *> onAttr "z" z
 
-xmlModule (ExcludeSameMolecule x) = "excludeSameMolecule" ::= x
+xmlModule (ExcludeSameMolecule x) = onAttr "excludeSameMolecule" x
 
-xmlModule (RangeX low high step) = addChild $ xmlActOn "rangeX" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+xmlModule (RangeX low high step) = onNewChild "rangeX" $ onAttr "low" low *> onAttr "high" high *> onAttr "step" step
 
-xmlModule (RangeY low high step) = addChild $ xmlActOn "rangeY" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+xmlModule (RangeY low high step) = onNewChild "rangeY" $ onAttr "low" low *> onAttr "high" high *> onAttr "step" step
 
-xmlModule (RangeZ low high step) = addChild $ xmlActOn "rangeZ" [ "low" ::= low, "high" ::= high, "step" ::= step ]
+xmlModule (RangeZ low high step) = onNewChild "rangeZ" $ onAttr "low" low *> onAttr "high" high *> onAttr "step" step
 
-xmlModule (Range x) = "range" ::= x
+xmlModule (Range x) = onAttr "range" x
 
-xmlModule (InternalData1D source dest) = addChild $ xmlActOn "internalData1D" [ "source" ::= source, "dest" ::= dest ]
+xmlModule (InternalData1D source dest) = onNewChild "internalData1D" $ onAttr "source" source *> onAttr "dest" dest
 
-xmlModule (Multiplicity x y z) = addChild $ xmlActOn "multiplicity" [ "x" ::= x, "y" ::= y, "z" ::= z ]
+xmlModule (Multiplicity x y z) = onNewChild "multiplicity" $ onAttr "x" x *> onAttr "y" y *> onAttr "z" z
 
-xmlModule (QBroadening xs) = addChild $ addTerms "qBroadening" xs
+xmlModule (QBroadening xs) = onNewChild "qBroadening" $ for_ xs (onNewChild "term" <<< onAttr "value")
 
-xmlModule (QDelta x) = "qDelta" ::= x
+xmlModule (QDelta x) = onAttr "qDelta" x
 
-xmlModule (QMax x) = "qMax" ::= x
+xmlModule (QMax x) = onAttr "qMax" x
 
-xmlModule (QMin x) = "qMin" ::= x
+xmlModule (QMin x) = onAttr "qMin" x
 
-xmlModule (TestReflections x) = "testReflections" ::= x
+xmlModule (TestReflections x) = onAttr "testReflections" x
 
-xmlModule (Method x) = "method" ::= x
+xmlModule (Method x) = onAttr "method" x
 
-xmlModule (SourceRDF x) = "sourceRDF" ::= x
+xmlModule (SourceRDF x) = onAttr "sourceRDF" x
 
-xmlModule (SourceRDFs x) = "sourceRDFs" ::= x
+xmlModule (SourceRDFs x) = onAttr "sourceRDFs" x
 
-xmlModule (WindowFunction x) = "windowFunction" ::= x
+xmlModule (WindowFunction x) = onAttr "windowFunction" x
 
-xmlModule (IncludeBragg x) = "includeBragg" ::= x
+xmlModule (IncludeBragg x) = onAttr "includeBragg" x
 
-xmlModule (BraggQBroadening typ i j) = addChild $ xmlActOn "braggQBroadening" [ "type" ::= typ, "i" ::= i, "j" ::= j ]
+xmlModule (BraggQBroadening typ i j) = onNewChild "braggQBroadening" $ onAttr "type" typ *> onAttr "i" i *> onAttr "j" j
 
-xmlModule (SourceSQs x) = "sourceSQs" ::= x
+xmlModule (SourceSQs x) = onAttr "sourceSQs" x
 
-xmlModule (Data1D loc kind file children) = addChild $ xmlActOn "data1D" $ [ "location" ::= loc, "format" ::= kind, "file" ::= file ] <> map (\x -> addChild $ xmlData1D x) children
+xmlModule (Data1D loc kind file children) = onNewChild "data1D" $ onAttr "location" loc *> onAttr "format" kind *> onAttr "file" file *> for_ children xmlData1D
 
-xmlModule (Threshold x) = "threshold" ::= x
+xmlModule (Threshold x) = onAttr "threshold" x
 
-xmlModule (Isotopologue xs) = addChild $ addTerms "isotopologue" xs
+xmlModule (Isotopologue xs) = onNewChild "isotopologue" $ for_ xs (onNewChild "term" <<< onAttr "value")
 
-xmlModule (SampledDouble loc value) = addChild $ xmlActOn "sampledDouble" [ "location" ::= loc, "value" ::= value ]
+xmlModule (SampledDouble loc value) = onNewChild "sampledDouble" $ onAttr "location" loc *> onAttr "value" value
 
-xmlModule (SampledVector location value ref) = addChild $ xmlActOn "sampledVector" [ "location" ::= location, "value" ::= value, "ref" ::= ref ]
+xmlModule (SampledVector location value ref) = onNewChild "sampledVector" $ onAttr "location" location *> onAttr "value" value *> onAttr "ref" ref
 
-xmlModule (ErrorType x) = "errorType" ::= x
+xmlModule (ErrorType x) = onAttr "errorType" x
 
-xmlModule (Normalisation x) = "normalisation" ::= x
+xmlModule (Normalisation x) = onAttr "normalisation" x
 
-xmlModule (RangeA low high) = addChild $ xmlActOn "rangeA" [ "low" ::= low, "high" ::= high ]
+xmlModule (RangeA low high) = onNewChild "rangeA" $ onAttr "low" low *> onAttr "high" high
 
-xmlModule (RangeB low high) = addChild $ xmlActOn "rangeB" [ "low" ::= low, "high" ::= high ]
+xmlModule (RangeB low high) = onNewChild "rangeB" $ onAttr "low" low *> onAttr "high" high
 
-xmlModule (RangeBEnabled x) = "rangeBEnabled" ::= x
+xmlModule (RangeBEnabled x) = onAttr "rangeBEnabled" x
 
-xmlModule (Test x) = "test" ::= x
+xmlModule (Test x) = onAttr "test" x
 
-xmlModule (TestAbsEnergyEP name value) = addChild $ xmlActOn "testAbsEnergyEP" [ "name" ::= name, "value" ::= value ]
+xmlModule (TestAbsEnergyEP name value) = onNewChild "testAbsEnergyEP" $ onAttr "name" name *> onAttr "value" value
 
-xmlModule (TestAnalytic x) = "testAnalytic" ::= x
+xmlModule (TestAnalytic x) = onAttr "testAnalytic" x
 
-xmlModule (TestReferenceInter xs) = addChild $ addTerms "testReferenceInter" xs
+xmlModule (TestReferenceInter xs) = onNewChild "testReferenceInter" $ for_ xs (onNewChild "term" <<< onAttr "value")
 
-xmlModule (TestReferenceIntra x) = "testReferenceIntra" ::= x
+xmlModule (TestReferenceIntra x) = onAttr "testReferenceIntra" x
 
-xmlModule (TestReference name path children) = addChild $ xmlActOn "testReference" $ [ "name" ::= name, "path" ::= path ] <> map (\x -> addChild $ xmlData1D x) children
+xmlModule (TestReference name path children) = onNewChild "testReference" $ onAttr "name" name *> onAttr "path" path <> for_ children xmlData1D
 
-xmlModule (TestThreshold x) = "testThreshold" ::= x
+xmlModule (TestThreshold x) = onAttr "testThreshold" x
 
-xmlModule (Save x) = "save" ::= x
+xmlModule (Save x) = onAttr "save" x
 
-xmlModule (EReq x) = "eReq" ::= x
+xmlModule (EReq x) = onAttr "eReq" x
 
-xmlModule (InpAFile x) = "inpAFile" ::= x
+xmlModule (InpAFile x) = onAttr "inpAFile" x
 
-xmlModule (NPItSs x) = "nPItSs" ::= x
+xmlModule (NPItSs x) = onAttr "nPItSs" x
 
-xmlModule (Feedback x) = "feedback" ::= x
+xmlModule (Feedback x) = onAttr "feedback" x
 
-xmlModule (Reference name value children) = addChild $ xmlActOn "reference" $ [ "name" ::= name, "value" ::= value ] <> map (\x -> addChild $ xmlData1D x) children
+xmlModule (Reference name value children) = onNewChild "reference" $ onAttr "name" name *> onAttr "value" value <> for_ children xmlData1D
 
-xmlModule (Exchangeable x) = addChild $ addTerms "exchangeable" x
+xmlModule (Exchangeable xs) = onNewChild "exchangeable" $ for_ xs (onNewChild "term" <<< onAttr "value")
 
-xmlModule (ExpansionFunction x) = "expansionFunction" ::= x
+xmlModule (ExpansionFunction x) = onAttr "expansionFunction" x
 
-xmlModule (PCofFile x) = "pCofFile" ::= x
+xmlModule (PCofFile x) = onAttr "pCofFile" x
 
-xmlModule (OnlyWhenEnergyStable x) = "onlyWhenEnergyStable" ::= x
+xmlModule (OnlyWhenEnergyStable x) = onAttr "onlyWhenEnergyStable" x
 
-xmlModule (ReferenceFTQMin x) = "referenceFTQMin" ::= x
+xmlModule (ReferenceFTQMin x) = onAttr "referenceFTQMin" x
 
-xmlModule (ReferenceFTQMax x) = "referenceFTQMax" ::= x
+xmlModule (ReferenceFTQMax x) = onAttr "referenceFTQMax" x
 
-xmlModule (ReferenceNormalisation x) = "referenceNormalisation" ::= x
+xmlModule (ReferenceNormalisation x) = onAttr "referenceNormalisation" x
 
-xmlModule (ReferenceWindowFunction x) = "referenceWindowFunction" ::= x
+xmlModule (ReferenceWindowFunction x) = onAttr "referenceWindowFunction" x
 
-xmlModule (SaveRepresentativeGR x) = "saveRepresentativeGR" ::= x
+xmlModule (SaveRepresentativeGR x) = onAttr "saveRepresentativeGR" x
 
-xmlModule (SaveEstimatedPartials x) = "saveEstimatedPartials" ::= x
+xmlModule (SaveEstimatedPartials x) = onAttr "saveEstimatedPartials" x
 
-xmlModule (SaveReference x) = "saveReference" ::= x
+xmlModule (SaveReference x) = onAttr "saveReference" x
 
-xmlModule (SaveSQ x) = "saveSQ" ::= x
+xmlModule (SaveSQ x) = onAttr "saveSQ" x
 
-xmlModule (Species x) = "species" ::= x
+xmlModule (Species x) = onAttr "species" x
 
-xmlModule (AtomType index name) = addChild $ xmlActOn "atomTypes" [ "index" ::= index, "type" ::= name ]
+xmlModule (AtomType index name) = onNewChild "atomTypes" $ onAttr "index" index *> onAttr "type" name
 
-xmlModule (TotalCharge x) = "totalCharge" ::= x
+xmlModule (TotalCharge x) = onAttr "totalCharge" x
 
-xmlModule (NSteps x) = "nSteps" ::= x
+xmlModule (NSteps x) = onAttr "nSteps" x
 
-xmlModule (InternalTest x) = "internalTest" ::= x
+xmlModule (InternalTest x) = onAttr "internalTest" x
 
-xmlModule (RotationStepSize x) = "rotationStepSize" ::= x
+xmlModule (RotationStepSize x) = onAttr "rotationStepSize" x
 
-xmlModule (TranslationStepSize x) = "translationStepSize" ::= x
+xmlModule (TranslationStepSize x) = onAttr "translationStepSize" x
 
-xmlModule (Bond i j const eq) = addChild $ xmlActOn "bond" [ "i" ::= i, "j" ::= j, "const" ::= const, "eq" ::= eq ]
+xmlModule (Bond i j const eq) = onNewChild "bond" $ onAttr "i" i *> onAttr "j" j *> onAttr "const" const *> onAttr "eq" eq
 
-xmlModule (Angle i j k terms) = addChild $ xmlActOn "angle" $ [ "i" ::= i, "j" ::= j, "k" ::= k ] <> map (\t s -> ("value" ::= t) (xmlEmptyNode "term") ::=> s) terms
+xmlModule (Angle i j k terms) = onNewChild "angle" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k <> for_ terms (onNewChild "term" <<< onAttr "value")
 
-xmlModule (Torsion i j k l terms) = addChild $ xmlActOn "torsion" $ [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] <> map (\t s -> ("value" ::= t) (xmlEmptyNode "term") ::=> s) terms
+xmlModule (Torsion i j k l terms) = onNewChild "torsion" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k *> onAttr "l" l <> for_ terms (onNewChild "term" <<< onAttr "value")
 
-xmlModule (Improper i j k l terms) = addChild $ xmlActOn "improper" $ [ "i" ::= i, "j" ::= j, "k" ::= k, "l" ::= l ] <> map (\t s -> ("value" ::= t) (xmlEmptyNode "term") ::=> s) terms
+xmlModule (Improper i j k l terms) = onNewChild "improper" $ onAttr "i" i *> onAttr "j" j *> onAttr "k" k *> onAttr "l" l <> for_ terms (onNewChild "term" <<< onAttr "value")
 
-xmlModule (OverwritePotentials x) = "overwritePotentials" ::= x
+xmlModule (OverwritePotentials x) = onAttr "overwritePotentials" x
 
-xmlModule (RawNum value) = addChild $ xmlActOn "rawNum" [ "value" ::= value ]
+xmlModule (RawNum value) = onNewChild "rawNum" $ onAttr "value" value
 
-xmlModule (Export format path children) = addChild $ xmlActOn "export" $ [ "format" ::= format, "path" ::= path ] <> map (\x -> addChild $ xmlData1D x) children
+xmlModule (Export format path children) = onNewChild "export" $ onAttr "format" format *> onAttr "path" path *> for_ children xmlData1D
 
-xmlModule (Analyser parts) = addChild $ xmlActOn "analyser" (map xmlAnalyser parts)
+xmlModule (Analyser parts) = onNewChild "analyser" $ for_ parts xmlAnalyser
 
-xmlData1D :: Data1DPart -> XmlNode
-xmlData1D (Y y) = xmlActOn "y" [ "value" ::= y ]
+xmlData1D :: Data1DPart -> State XmlNode Unit
+xmlData1D (Y y) = onNewChild "y" $ onAttr "value" y
 
-xmlData1D (XMin x) = xmlActOn "xMin" [ "value" ::= x ]
+xmlData1D (XMin x) = onNewChild "xMin" $ onAttr "value" x
