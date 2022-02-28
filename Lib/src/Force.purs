@@ -27,6 +27,7 @@ data ForceInfo
   | Cos Number Number Number Number
   | CosN (Array Number)
   | CosNC (Array Number)
+  | FourierN (Array Number)
   | UFFCosine Number Number Number
   | LJ Number Number
   | LJGeometric (Array Number)
@@ -37,7 +38,7 @@ derive instance genericForceInfo :: Generic ForceInfo _
 instance showForceInfo :: Show ForceInfo where
   show x = genericShow x
 
-forceInfo = harmonic <|> ref <|> none <|> cos2 <|> cos3 <|> cosNC <|> cosN <|> cos <|> uffCosine <|> ljGeometric <|> lj <?> "Force Info"
+forceInfo = harmonic <|> ref <|> none <|> cos2 <|> cos3 <|> cosNC <|> cosN <|> cos <|> uffCosine <|> fourierN <|> ljGeometric <|> lj <?> "Force Info"
   where
   harmonic = dissolveTokens.symbol "Harmonic" *> (Harmonic <$> named signedNum <*> named signedNum)
 
@@ -50,6 +51,8 @@ forceInfo = harmonic <|> ref <|> none <|> cos2 <|> cos3 <|> cosNC <|> cosN <|> c
   cosN = dissolveTokens.symbol "CosN" *> ((CosN <<< toUnfoldable) <$> (sepBy1 signedFloat dissolveTokens.whiteSpace))
 
   cos = dissolveTokens.symbol "Cos" *> (Cos <$> signedFloat <*> signedFloat <*> signedFloat <*> signedFloat)
+
+  fourierN = dissolveTokens.symbol "FourierN" *> ((FourierN <<< toUnfoldable) <$> (sepBy1 signedFloat dissolveTokens.whiteSpace))
 
   lj = dissolveTokens.symbol "LJ" *> (LJ <$> named signedFloat <*> named signedFloat)
 
@@ -95,6 +98,12 @@ writeRef (Just (CosNC xs)) s =
 
 writeRef (Just (CosN xs)) s =
   "type" := "CosN"
+    ~> "terms"
+    := xs
+    ~> s
+
+writeRef (Just (FourierN xs)) s =
+  "type" := "FourierN"
     ~> "terms"
     := xs
     ~> s
@@ -172,5 +181,7 @@ xmlRef (Just (LJ a b)) = onNewChild "lj" $ onAttr "a" a *> onAttr "b" b
 xmlRef (Just (CosN cs)) = onNewChild "CosN" $ for_ cs (onNewChild "term" <<< onAttr "value")
 
 xmlRef (Just (CosNC cs)) = onNewChild "CosNC" $ for_ cs (onNewChild "term" <<< onAttr "value")
+
+xmlRef (Just (FourierN cs)) = onNewChild "FourierN" $ for_ cs (onNewChild "term" <<< onAttr "value")
 
 xmlRef (Just (LJGeometric cs)) = onNewChild "LJGeometric" $ for_ cs (onNewChild "term" <<< onAttr "value")
